@@ -30,6 +30,9 @@
 *.out
 *.app
 
+#Other files
+/extra
+
 
 # Allow Tools
 !resources/bin2cpp.exe

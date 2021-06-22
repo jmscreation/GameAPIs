@@ -7,19 +7,21 @@ cls
 
 set CPP=c++
 set GPP=g++
-set WINRES=windres
-set ARCH=64
 set OUTPUT=program.exe
 set DEBUGMODE=1
 
+set BUILD_COMPELTED=0
+set PACK_ARCHIVE=0
+set REBUILD_RESOURCES=0
 set LINK_ONLY=0
 set VERBOSE=0
 
 set ASYNC_BUILD=1
 
-set ADDITIONAL_LIBRARIES=-static-libstdc++ -lpthread -static -lsetupapi -lwinmm -luser32 -lgdi32 -lopengl32 -lpng -lz -lShlwapi -ldwmapi -lstdc++fs
+set COMPILER_FLAGS=-std=c++20
+set ADDITIONAL_LIBRARIES=-static-libstdc++ -lpthread -static -lportaudio -lsetupapi -lwinmm -luser32 -lgdi32 -lopengl32 -lShlwapi -ldwmapi -lstdc++fs -lpng -lz
 set ADDITIONAL_LIBDIRS=-Llibrary
-set ADDITIONAL_INCLUDEDIRS=-Ilibrary
+set ADDITIONAL_INCLUDEDIRS=-Ilibrary -Isrc\completed -Isrc -Iresources
 
 del %OUTPUT% 2>nul
 
@@ -30,8 +32,13 @@ if %LINK_ONLY% GTR 0 (
 	goto linker
 )
 
+if %PACK_ARCHIVE% GTR 0 (
+	echo Generating Precompiled Archive Data Buffer...
+	start /B /WAIT "Archive" resources\bin2cpp resources\archive.dat archive_data resources\test_archive_data.cpp
+)
+
 if %DEBUGMODE% GTR 0 (
-	set DEBUG_INFO=-ggdb -g
+	set DEBUG_INFO=-ggdb -g -Og
 ) else (
 	set DEBUG_INFO=-s
 )
@@ -42,22 +49,51 @@ if %ASYNC_BUILD% GTR 0 (
 	set WAIT=/WAIT
 )
 
-del /S /Q ".objs64\*" 2>nul
+del /S /Q ".objs64\*.o" >nul 2>nul
 
 if not exist .objs64 (
 	echo Creating Object Directory Structure...
 	mkdir .objs64
 )
 
+if %BUILD_COMPELTED% GTR 0 (
+	del /S /Q "src\completed\*.o" >nul 2>nul
+)
+
+if %REBUILD_RESOURCES% GTR 0 (
+	del /S /Q "resources\*.o" >nul 2>nul
+)
+
+echo Building Resource Files...
+for %%F in (resources\*.cpp) do (
+	if not exist resources\%%~nF.o (
+		echo Building %%~nF.o
+		if %VERBOSE% GTR 0 (
+			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o resources\%%~nF.o
+		)
+		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o resources\%%~nF.o
+	)
+)
+
+echo Re-Building Completed API Files...
+for %%F in (src\completed\*.cpp) do (
+	if not exist src\completed\%%~nF.o (
+		echo Building %%~nF.o
+		if %VERBOSE% GTR 0 (
+			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o src\completed\%%~nF.o
+		)
+		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o src\completed\%%~nF.o
+	)
+)
+
 echo Building API Files...
-for %%F in (*.cpp) do (
+for %%F in (src\*.cpp) do (
 	if not exist .objs64\%%~nF.o (
 		echo Building %%~nF.o
-		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% -std=c++20 %DEBUG_INFO% -c %%F -o .objs64\%%~nF.o
-
 		if %VERBOSE% GTR 0 (
-			echo %CPP% %ADDITIONAL_INCLUDEDIRS% -std=c++20 %DEBUG_INFO% -c %%F -o .objs64\%%~nF.o
+			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o .objs64\%%~nF.o
 		)
+		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o .objs64\%%~nF.o
 	)
 )
 
@@ -74,18 +110,12 @@ if %count%==0 (
 :linker
 
 set "files="
+for /f "delims=" %%A in ('dir /b /a-d "src\completed\*.o" ') do set "files=!files! src\completed\%%A"
+for /f "delims=" %%A in ('dir /b /a-d "resources\*.o" ') do set "files=!files! resources\%%A"
 for /f "delims=" %%A in ('dir /b /a-d ".objs64\%*" ') do set "files=!files! .objs64\%%A"
 
-echo Linking Executable...
-if %ARCH%==64 (
-	goto link
-)
-if %ARCH%==32 (
-	goto link
-)
-echo ARCH Must be 32 or 64! Make sure ARCH matches the compiler's architecture!
-goto finish
 :link
+echo Linking Executable...
 
 if %DEBUGMODE% GTR 0 (
 	set MWINDOWS=
