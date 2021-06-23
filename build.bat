@@ -11,8 +11,8 @@ set OUTPUT=program.exe
 set DEBUGMODE=1
 
 set BUILD_COMPELTED=0
-set PACK_ARCHIVE=0
-set REBUILD_RESOURCES=0
+set PACK_ARCHIVE=1
+set REBUILD_RESOURCES=1
 set LINK_ONLY=0
 set VERBOSE=0
 
@@ -34,7 +34,9 @@ if %LINK_ONLY% GTR 0 (
 
 if %PACK_ARCHIVE% GTR 0 (
 	echo Generating Precompiled Archive Data Buffer...
-	start /B /WAIT "Archive" resources\bin2cpp resources\archive.dat archive_data resources\test_archive_data.cpp
+	cd resources
+	start /B /WAIT "Archive" bin2cpp archive.dat archive_data test_archive_data
+	cd ..\
 )
 
 if %DEBUGMODE% GTR 0 (
