@@ -39,8 +39,15 @@ namespace json {
 
     bool parseData(const char* data, size_t length) {
         rapidjson::Document& config = _jsonData;
-
+        config.SetNull();
         config.Parse(data, length);
+        if(config.GetParseError() != rapidjson::ParseErrorCode::kParseErrorNone){
+            if(displayErrors){
+                std::cout << "JSON Failed to parse - Error @" << config.GetErrorOffset()
+                          << " -> " << rapidjson::GetParseError_En(config.GetParseError()) << "\n";
+            }
+            return false;
+        }
         if(!config.IsObject()){
             if(displayErrors){
                 std::cout << "Initial JSON must be an object\n";

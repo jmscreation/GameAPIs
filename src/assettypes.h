@@ -11,6 +11,8 @@
 */
 
 namespace olc {
+    
+    // The order in which the following are declared is important
 
     struct AssetReference {
         std::string name;
@@ -33,8 +35,12 @@ namespace olc {
         SpriteAsset sprite;
         olc::Decal texture;
     };
-
     typedef std::shared_ptr<ResourceTexture> TextureAsset;
+
+
+    struct Sequence {
+        uint32_t start, length;
+    };
 
     struct Frame {
         olc::vf2d offset; // frame source start position
@@ -44,12 +50,12 @@ namespace olc {
         uint32_t count; // image total count
         uint32_t rowsize; // image count per row
 
+        std::map<std::string, Sequence> region; // animation region
+
         TextureAsset texture; // actual texture image used
     };
 
     typedef std::shared_ptr<Frame> AnimationAsset;
-
-
     typedef std::shared_ptr<olc::SoundBuffer> SoundAsset;
 
 }

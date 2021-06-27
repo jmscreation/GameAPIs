@@ -4,6 +4,7 @@ namespace olc {
 
     AssetManager::AssetManager() {
         imageLoader = new memloader::MemoryImageLoader();
+        json::displayErrors = true;
     }
 
     AssetManager::~AssetManager() {
@@ -55,13 +56,17 @@ namespace olc {
             std::string texName;
 
             if(!json::parseData(raw.data, raw.length)){ // invalid json
+                std::cout << "failed to parse json data for animation \"" << name << "\"\n";
                 return nullptr;
             }
 
             json::loadProperty("image", texName);                   // texture name to load
 
             TextureAsset tex = GetTexture(texName);
-            if(tex == nullptr) return nullptr; // animation image failed to load
+            if(tex == nullptr){
+                std::cout << "animation failed to load image \"" << texName << "\"\n";
+                return nullptr; // animation image failed to load
+            }
 
             animation.reset(new olc::Frame());
             animation->texture = tex; // update animation texture
@@ -71,18 +76,35 @@ namespace olc {
             animation->rowsize = 1;
             animation->size = {float(tex->sprite->width), float(tex->sprite->height)};
 
-
-            json::Object offset, spread;
+            json::Object offset, spread, sequences;
             json::loadProperty("offset", offset);                   // frame initial offset
             json::loadProperty("spread", spread);                   // frame spread distance
+            json::loadProperty("sequences", sequences);             // frame regions
             json::loadProperty(offset, "x", animation->offset.x);   // frame initial x offset
             json::loadProperty(offset, "y", animation->offset.y);   // frame initial y offset
             json::loadProperty(spread, "x", animation->spread.x);   // per frame x distance
             json::loadProperty(spread, "y", animation->spread.y);   // per frame y distance
-            json::loadProperty("count", animation->count);          // total images
-            json::loadProperty("rowsize", animation->rowsize);      // total images per row
             json::loadProperty("width", animation->size.x);         // frame width
             json::loadProperty("height", animation->size.y);        // frame height
+            json::loadProperty("count", animation->count);          // total images
+            json::loadProperty("rowsize", animation->rowsize);      // total images per row
+            
+            animation->region.insert_or_assign("default", (Sequence) {0, animation->count}); // generate a default animation sequence
+
+            if(sequences.IsObject()){
+                for(rapidjson::Value::ConstMemberIterator it = sequences.MemberBegin(); it != sequences.MemberEnd(); ++it){
+                    if(!it->name.IsString()){
+                        std::cout << "skipping non-string key\n";
+                        continue;
+                    }
+                    
+                    Sequence data {0, 0};
+                    json::loadProperty(it->value, "start", data.start);
+                    json::loadProperty(it->value, "length", data.length);
+                    
+                    animation->region.insert_or_assign(it->name.GetString(), data);
+                }
+            }
 
             assets.insert({name, GenericAsset(animation) });
         }

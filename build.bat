@@ -40,7 +40,7 @@ if %PACK_ARCHIVE% GTR 0 (
 )
 
 if %DEBUGMODE% GTR 0 (
-	set DEBUG_INFO=-ggdb -g -Og
+	set DEBUG_INFO=-ggdb -g
 ) else (
 	set DEBUG_INFO=-s
 )

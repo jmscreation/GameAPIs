@@ -117,8 +117,11 @@ public:
     std::vector<olc::Animation*> objs;
     std::vector<olc::SoundAsset> sounds;
 
+    olc::Animation* player;
+
     bool OnUserCreate() {
         olc::Animation::SetPGE(this);
+        player = nullptr;
 
         bool success = false;
         for(auto& asset : manager.GetResourceList()){
@@ -140,14 +143,19 @@ public:
 
                     if(frameData != nullptr){
                         success = true;
-                        std::cout << "Count: " << frameData->count << "\n"
+                        std::cout << "Name: " << asset.name << "\n"
+                                << "Count: " << frameData->count << "\n"
                                 << "Rowsize: " << frameData->rowsize << "\n"
                                 << "Offset: " << frameData->offset.str() << "\n"
                                 << "Size: " << frameData->size.str() << "\n"
-                                << "Spread: " << frameData->spread.str() << "\n";
+                                << "Spread: " << frameData->spread.str() << "\n"
+                                << "Regions: " << frameData->region.size() << "\n";
+                        
+                        for(auto& rg : frameData->region) std::cout << "\t" << rg.first << " : {" << rg.second.start << ", " << rg.second.length << "}\n";
 
                         olc::Animation* s = new olc::Animation(*frameData);
                         objs.push_back(s);
+                        if(asset.name == "player.ani") player = s;
                         s->origin = s->frameLocation.size / 2.0f;
                         s->position = {ScreenWidth() / 2.0f, ScreenHeight() / 2.0f};
                         s->scale /= 2.0f;
@@ -181,6 +189,9 @@ public:
             static Clock clockSound;
             if(clockSound.getSeconds() > 5){
                 sounds[rand() % sounds.size()]->play();
+                if(player != nullptr){
+                    player->setFrameRegion((rand() % (player->getFrameRegionCount() - 1)) + 1);
+                }
                 clockSound.restart();
             }
         }
@@ -204,7 +215,7 @@ public:
 
                 static Clock nf;
                 if(nf.getSeconds() > 0.25f){
-                    s->setFrame((s->getFrame() + 1) % s->frameLocation.count);
+                    s->setFrame(s->getFrame() + 1);
                     nf.restart();
                 }
                 
