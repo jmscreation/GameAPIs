@@ -9,35 +9,7 @@
 
 namespace fs = std::filesystem;
 
-std::vector<std::string> paths;
-
-bool testExportArchive() {
-    std::cout << "Init Archive...\n";
-    ArchiveFileExporter archive;
-
-    std::cout << "Sign Archive...\n";
-    archive.SignArchive("test-archive-JMSCREATOR");
-
-    std::cout << "Add Files To Archive...\n";
-    size_t index = 0;
-    for(std::string& path : paths){
-        std::string ext = fs::path(path).extension().string(),
-                    fname = fs::path(path).filename().string(),
-                    type = "file";
-        
-        if(ext == ".png") type = "sprite";
-        if(ext == ".ani") type = "animation";
-        if(ext == ".ogg") type = "sound";
-
-        if(!archive.AddFile(path, fname, type)){
-            std::cout << "Archive Failed Operation\n";
-            return false;
-        }
-    }
-
-    std::cout << "Export Archive...\n";
-    return archive.SaveArchive("archive.dat", "Test Archive");
-}
+std::vector<std::string> arguments;
 
 bool testImportArchive() {
     std::cout << "Init Archive...\n";
@@ -184,6 +156,7 @@ public:
 
     bool OnUserUpdate(float delta) {
         const float width = 128, height = 128;
+        Clear(olc::BLANK);
 
         {
             static Clock clockSound;
@@ -254,20 +227,19 @@ bool testAssetManager() {
 int main(int argc, char** argv){
     // load all paths
     for(int i=1; i < argc; ++i){
-        paths.push_back(argv[i]);
+        arguments.push_back(argv[i]);
     }
 
-    if(paths.size()){
-        if(paths[0] == "extract"){
+    if(arguments.size()){
+        if(arguments[0] == "extract"){
             testExtractArchive();
-        } else {
-            testExportArchive();
+        }
+        if(arguments[0] == "import"){
+            testImportArchive();
         }
     } else {
-        testImportArchive();
+        testAssetManager();
     }
-    
-    testAssetManager();
 
     return 0;
 }
