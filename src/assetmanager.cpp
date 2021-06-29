@@ -3,6 +3,7 @@
 namespace olc {
 
     AssetManager::AssetManager() {
+        olc::Font::init();
         imageLoader = new memloader::MemoryImageLoader();
         json::displayErrors = true;
     }
@@ -41,6 +42,24 @@ namespace olc {
     }
 
     // Load From Archive
+
+    FontAsset AssetManager::GetFont(const std::string& name) {
+        FontAsset font;
+        if(assets.count(name) == 1) {
+            auto ptr = std::get_if<FontAsset>(&assets[name]);
+            if(ptr == nullptr) return nullptr;
+
+            font = *ptr;
+        } else {
+            ResourceData raw = GetRaw(name);
+            if(raw.type != AssetReference::FONT) return nullptr;
+            if(raw.length == 0) return nullptr;
+            
+            font.reset(new olc::Font((FT_Byte*) raw.data, raw.length, 32));
+            assets.insert({name, GenericAsset(font) });
+        }
+        return font;
+    }
 
     AnimationAsset AssetManager::GetAnimation(const std::string& name) {
 

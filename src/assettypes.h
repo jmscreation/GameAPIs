@@ -2,6 +2,7 @@
 #define __ASSET_TYPES__
 
 #include "olcPixelGameEngine.h"
+#include "olcPGEX_TTF.h"
 #include "audio.h"
 #include <memory>
 #include <string>
@@ -17,7 +18,7 @@ namespace olc {
     struct AssetReference {
         std::string name;
         enum AssetType {
-            SPRITE, SOUND, RAW, ANIMATION
+            SPRITE, SOUND, RAW, ANIMATION, FONT, MENU
         } type;
     };
 
@@ -57,6 +58,7 @@ namespace olc {
 
     typedef std::shared_ptr<Frame> AnimationAsset;
     typedef std::shared_ptr<olc::SoundBuffer> SoundAsset;
+    typedef std::shared_ptr<olc::Font> FontAsset;
 
 }
 

@@ -2,6 +2,7 @@
 #define __ASSET_MANAGER__
 
 #include "assettypes.h"
+#include "olcPGEX_TTF.h"
 
 #include "memloader.h"
 #include "anisprite.h" // olc::Animation
@@ -16,7 +17,7 @@ namespace olc {
 
     class AssetManager {
     protected:
-        typedef std::variant<std::monostate, SpriteAsset, SoundAsset, AnimationAsset> GenericAsset;
+        typedef std::variant<std::monostate, SpriteAsset, SoundAsset, AnimationAsset, FontAsset> GenericAsset;
         typedef std::variant<std::monostate, TextureAsset> SecondaryAsset;
 
         memloader::MemoryImageLoader* imageLoader;
@@ -28,6 +29,7 @@ namespace olc {
 
         virtual std::vector<AssetReference> GetResourceList() = 0;
 
+        virtual FontAsset GetFont(const std::string& name);
         virtual AnimationAsset GetAnimation(const std::string& name);
         virtual TextureAsset GetTexture(const std::string& name);
         virtual SpriteAsset GetSprite(const std::string& name);

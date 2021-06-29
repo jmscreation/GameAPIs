@@ -82,12 +82,16 @@ public:
 
     virtual ~Window() {
         decals.clear();
+        sounds.clear();
+        fonts.clear();
         for(auto& ptr : objs) delete ptr;
+        objs.clear();
     }
 
-    std::vector<olc::TextureAsset> decals;
     std::vector<olc::Animation*> objs;
+    std::vector<olc::TextureAsset> decals;
     std::vector<olc::SoundAsset> sounds;
+    std::vector<olc::FontAsset> fonts;
 
     olc::Animation* player;
 
@@ -148,6 +152,17 @@ public:
                     }
                     break;
                 }
+            
+                case olc::AssetReference::FONT: {
+                    olc::FontAsset font = manager.GetFont(asset.name);
+
+                    if(font != nullptr){
+                        fonts.push_back(font);
+                    } else {
+                        std::cout << "Failed to load font: " << asset.name << "\n";
+                    }
+                    break;
+                }
             }
         }
         
@@ -198,6 +213,20 @@ public:
                 s->Draw();
             }
         }
+
+        static std::string data;
+        static olc::Decal* text = nullptr;
+
+        data = "Delta: " + std::to_string(delta);
+
+        if(text == nullptr){
+            if(fonts.size()){
+                olc::Font& fnt = *fonts.front();
+                fnt.DrawString(data, 16, 16, olc::WHITE);
+            }
+        } else {
+            DrawDecal({16.0f, 16.0f}, text);
+        }
         
         return true;
     }
@@ -220,6 +249,8 @@ bool testAssetManager() {
 
     // spawn window and test
     Window win(manager);
+
+    std::cout << "testAssetManager() completed\n";
 
     return true;
 }

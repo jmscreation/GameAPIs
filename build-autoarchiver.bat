@@ -16,7 +16,7 @@ set VERBOSE=0
 set ASYNC_BUILD=1
 
 set COMPILER_FLAGS=-std=c++20
-set ADDITIONAL_LIBRARIES=-static-libstdc++ -lpthread -static -lportaudio -lsetupapi -lwinmm -luser32 -lgdi32 -lopengl32 -lShlwapi -ldwmapi -lstdc++fs -lpng -lz
+set ADDITIONAL_LIBRARIES=-static-libstdc++ -lpthread -static -lportaudio -lsetupapi -lwinmm -luser32 -lgdi32 -lopengl32 -lShlwapi -ldwmapi -lstdc++fs -lpng -lz -lfreetype
 set ADDITIONAL_LIBDIRS=-Llibrary
 set ADDITIONAL_INCLUDEDIRS=-Ilibrary -Isrc\completed -Isrc -Iautoarchive
 

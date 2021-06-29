@@ -34,6 +34,9 @@ bool autoExportArchive(const std::string& dir = ".\\", const std::string& dest =
         if(ext == ".dat") continue; // do not allow *.dat in archive
         
         if(ext == ".png") type = "sprite";
+        if(ext == ".mnu") type = "menu";
+        if(ext == ".ttf") type = "font";
+        if(ext == ".otf") type = "font";
         if(ext == ".ani") type = "animation";
         if(ext == ".ogg") type = "sound";
 

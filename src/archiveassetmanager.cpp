@@ -6,6 +6,8 @@ namespace olc {
         {"animation", AssetReference::ANIMATION},
         {"sprite", AssetReference::SPRITE},
         {"sound", AssetReference::SOUND},
+        {"font", AssetReference::FONT},
+        {"menu", AssetReference::MENU},
         {"file", AssetReference::RAW},
     };
 
