@@ -117,6 +117,7 @@ namespace olc {
             FT_Vector pen;
             pen.x = x * 64;
             pen.y = (pge->ScreenHeight() - y) * 64;
+            FT_Pos left = pen.x;
 
             olc::Pixel::Mode prevMode = pge->GetPixelMode();
             pge->SetPixelMode(olc::Pixel::ALPHA);
@@ -125,6 +126,12 @@ namespace olc {
 
             for (size_t i = 0; i < string.size(); i++) {
                 char32_t chr = string[i];
+                if(chr == U'\n') {
+                    pen.y -= fontFace->size->metrics.height;
+                    pen.x = left;
+                    continue;
+                }
+
                 Font *toUse = this;
                 FT_UInt chrIndex = GetCharIndex(chr);
 
@@ -134,6 +141,7 @@ namespace olc {
                         if (fbChr != 0) {
                             chrIndex = fbChr;
                             toUse = &font;
+                            break;
                         }
                     }
                 }
@@ -214,8 +222,16 @@ namespace olc {
 
             Font *prevToUse = nullptr;
 
+            FT_Pos left = pen.x;
+
             for (size_t i = 0; i < string.size(); i++) {
                 char32_t chr = string[i];
+
+                if(chr == U'\n') {
+                    pen.y -= fontFace->size->metrics.height;
+                    pen.x = left;
+                    continue;
+                }
 
                 Font *toUse = this;
                 FT_UInt chrIndex = GetCharIndex(chr);
@@ -226,6 +242,7 @@ namespace olc {
                         if (fbChr != 0) {
                             chrIndex = fbChr;
                             toUse = &font;
+                            break;
                         }
                     }
                 }
@@ -292,14 +309,18 @@ namespace olc {
         }
 
         olc::Sprite *RenderStringToSprite(std::u32string string,
-                                          olc::Pixel color) {
+                                          olc::Pixel color, olc::Sprite* sprite=nullptr) {
             olc::FontRect rect = GetStringBounds(string);
-            olc::Sprite *sprite = new olc::Sprite{rect.size.x, rect.size.y};
+            if(sprite == nullptr){
+                sprite = new olc::Sprite{rect.size.x, rect.size.y};
+            } else {
+                if(sprite->width < rect.size.x || sprite->height < rect.size.y) return nullptr;
+            }
 
-            for (int x = 0; x < rect.size.x; x++) {
-                for (int y = 0; y < rect.size.y; y++) {
-                    sprite->SetPixel(x, y, olc::BLANK);
-                }
+            olc::Pixel* px = sprite->GetData();
+
+            for (size_t i=0; i < sprite->width * sprite->height; ++i){
+                *px++ = olc::BLANK;
             }
 
             FT_Vector pen;
@@ -311,8 +332,16 @@ namespace olc {
 
             olc::Font *prevToUse = nullptr;
 
+            FT_Pos left = pen.x;
+
             for (size_t i = 0; i < string.size(); i++) {
                 char32_t chr = string[i];
+
+                if(chr == U'\n') {
+                    pen.y -= fontFace->size->metrics.height;
+                    pen.x = left;
+                    continue;
+                }
 
                 Font *toUse = this;
                 FT_UInt chrIndex = GetCharIndex(chr);
@@ -332,7 +361,6 @@ namespace olc {
                     FT_Vector kern;
                     FT_Get_Kerning(fontFace, string[i - 1], chr,
                                    FT_KERNING_DEFAULT, &kern);
-
                     pen.x += kern.x;
                     pen.y += kern.y;
                 }
@@ -368,8 +396,8 @@ namespace olc {
         }
 
         olc::Sprite *RenderStringToSprite(std::string string,
-                                          olc::Pixel color) {
-            return RenderStringToSprite(std::wstring_convert< std::codecvt_utf8<char32_t>, char32_t >{}.from_bytes(string), color);
+                                          olc::Pixel color, olc::Sprite* sprite=nullptr) {
+            return RenderStringToSprite(std::wstring_convert< std::codecvt_utf8<char32_t>, char32_t >{}.from_bytes(string), color, sprite);
         }
 
         olc::Decal *RenderStringToDecal(std::u32string string,

@@ -1,11 +1,13 @@
 #include "resources.h"
 #include "anisprite.h"
+#include "textelement.h"
 #include "archivefilemake.h"
 #include "archiveassetmanager.h"
 #include "olcPixelGameEngine.h"
 #include "clock.h"
 
 #include <filesystem>
+#include <sstream>
 
 namespace fs = std::filesystem;
 
@@ -96,7 +98,6 @@ public:
     olc::Animation* player;
 
     bool OnUserCreate() {
-        olc::Animation::SetPGE(this);
         player = nullptr;
 
         bool success = false;
@@ -190,7 +191,7 @@ public:
 			s->texture.Update();
 			float scale = std::min(width / s->sprite->width, height / s->sprite->height);
 
-			DrawDecal({ float(e % mw) * width , float(e / mh) * height}, &s->texture, {scale, scale});
+			//DrawDecal({ float(e % mw) * width , float(e / mh) * height}, &s->texture, {scale, scale});
 			++e;
 		}
 
@@ -201,7 +202,7 @@ public:
             nf.restart();
         }
 
-        for(auto &s : objs){
+        for(auto &s : objs){ // render objects
 
             if(s->frameLocation.count > 1){
                 float sin = std::sin(runtime.getMilliseconds() / 800.0f) / 15.0f;
@@ -213,19 +214,46 @@ public:
                 s->Draw();
             }
         }
+        
+        static olc::TextElement* text = nullptr;
+        static std::string extra, str;
+        static std::stringstream debug;
 
-        static std::string data;
-        static olc::Decal* text = nullptr;
-
-        data = "Delta: " + std::to_string(delta);
+        str = "Delta: " + std::to_string(delta) + "\n"
+                        + std::to_string(1.0f / delta) + " FPS" + "\n";
 
         if(text == nullptr){
             if(fonts.size()){
-                olc::Font& fnt = *fonts.front();
-                fnt.DrawString(data, 16, 16, olc::WHITE);
+                text = new olc::TextElement(fonts.front());
+                text->position = olc::vf2d({24.0f, 168.0f});
             }
-        } else {
-            DrawDecal({16.0f, 16.0f}, text);
+        }
+
+        static Clock timer, upd, dbg;
+        if(dbg.getMilliseconds() > 200){
+            std::cout << debug.rdbuf() << "                                                              \r";
+            dbg.restart();
+        }
+
+
+        if(text != nullptr){
+            debug.str("");
+            timer.restart();
+            if(upd.getMilliseconds() > 1){
+                if(extra.size() > 175) extra = "";
+                if((extra.size() % 25) == 0) extra += "\n";
+                extra += char('a' + rand() % 26);
+
+                text->UpdateString(str + extra);
+                upd.restart();
+            }
+            
+            debug << "update text: " << timer.getMilliseconds() << "ms;  " << (1.0f / delta) << "fps;  ";
+
+            timer.restart();
+            text->Draw();
+
+            debug << "draw text: " << timer.getMilliseconds() << "ms";
         }
         
         return true;

@@ -2,17 +2,9 @@
 
 namespace olc {
 
-    // PGE Connector
-    olc::PixelGameEngine* Animation::pge = nullptr;
-
     // Construct
     Animation::Animation(const Frame& animationData):
-        curFrame(0), curRegion("default"), curRegionFrame(0), curPosition({0.0f,0.0f}),
-        position({0.0f, 0.0f}), scale({1.0f, 1.0f}), rotation(0.0f), origin({0.0f, 0.0f}), blend(olc::WHITE),
-        frameLocation(animationData)
-    {
-        if(pge == nullptr) std::cout << "Did you forget to call: olc::Animation::SetPGE( pge pointer ); ?\n"; // warn developer if they forgot the init call
-    }
+        curFrame(0), curRegion("default"), curRegionFrame(0), curPosition({0.0f,0.0f}), frameLocation(animationData) {}
 
     // Destruct
     Animation::~Animation() {}
@@ -69,10 +61,13 @@ namespace olc {
     }
 
     // Draw
-    void Animation::Draw() {
-        if(pge == nullptr || frameLocation.texture == nullptr) return;
-
-        pge->DrawPartialRotatedDecal(position, &frameLocation.texture->texture, rotation, origin, curPosition, frameLocation.size, scale, blend);
+    void Animation::Draw(View* view) {
+        if(frameLocation.texture == nullptr) return;
+        if(view != nullptr) {
+            view->DrawPartialRotatedDecal(position, &frameLocation.texture->texture, rotation, origin, curPosition, frameLocation.size, scale, blend);
+        } else {
+            pge->DrawPartialRotatedDecal(position, &frameLocation.texture->texture, rotation, origin, curPosition, frameLocation.size, scale, blend);
+        }
     }
 
 }
