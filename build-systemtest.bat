@@ -10,7 +10,7 @@ set GPP=g++
 set OUTPUT=program.exe
 set DEBUGMODE=1
 
-set BUILD_COMPELTED=0
+set BUILD_COMPLETED=0
 set REBUILD_RESOURCES=0
 set LINK_ONLY=0
 set VERBOSE=0
@@ -61,7 +61,7 @@ if not exist .objs64 (
 	mkdir .objs64
 )
 
-if %BUILD_COMPELTED% GTR 0 (
+if %BUILD_COMPLETED% GTR 0 (
 	del /S /Q "src\completed\*.o" >nul 2>nul
 )
 

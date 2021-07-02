@@ -200,6 +200,10 @@ namespace olc {
             DrawString(std::wstring_convert< std::codecvt_utf8<char32_t>, char32_t >{}.from_bytes(string), pos.x, pos.y, color, angle);
         }
 
+        FontRect GetRenderedStringBounds() {
+            return lastBounds;
+        }
+
         FontRect GetStringBounds(std::u32string string, float angle = 0.0f) {
             FT_Matrix rotMat;
             rotMat.xx = (FT_Fixed)(std::cos(angle) * 0x10000L);
@@ -293,7 +297,7 @@ namespace olc {
 
                 pen.x += slot->advance.x;
                 pen.y += slot->advance.y;
-
+                
                 FT_Done_Glyph(glyph);
             }
 
@@ -311,10 +315,9 @@ namespace olc {
         olc::Sprite *RenderStringToSprite(std::u32string string,
                                           olc::Pixel color, olc::Sprite* sprite=nullptr) {
             olc::FontRect rect = GetStringBounds(string);
+
             if(sprite == nullptr){
-                sprite = new olc::Sprite{rect.size.x, rect.size.y};
-            } else {
-                if(sprite->width < rect.size.x || sprite->height < rect.size.y) return nullptr;
+                sprite = new olc::Sprite{std::max(rect.size.x, 1), std::max(rect.size.y, 1)};
             }
 
             olc::Pixel* px = sprite->GetData();
@@ -322,6 +325,8 @@ namespace olc {
             for (size_t i=0; i < sprite->width * sprite->height; ++i){
                 *px++ = olc::BLANK;
             }
+
+            lastBounds = rect;
 
             FT_Vector pen;
             pen.x = -rect.offset.x;
@@ -563,6 +568,7 @@ namespace olc {
         FT_Face fontFace = nullptr;
         std::vector<Font> fallbacks;
         int fontSize;
+        FontRect lastBounds;
 
         static FT_Library library;
     };

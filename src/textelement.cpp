@@ -4,24 +4,36 @@
 namespace olc {
     
     TextElement::TextElement(olc::FontAsset fnt, const std::string& string):
-            font(fnt), textData(string), texture(nullptr), color(olc::WHITE),
+            font(fnt), textData(string), texture(nullptr), sprite(nullptr), color(olc::WHITE),
             size({0, 0}), hTextAlign(Align::NONE), vTextAlign(Align::NONE) {
         UpdateTexture();
     }
 
     TextElement::TextElement(olc::FontAsset fnt):
-            font(fnt), textData(""), texture(nullptr), color(olc::WHITE),
+            font(fnt), textData(""), texture(nullptr), sprite(nullptr), color(olc::WHITE),
             size({0, 0}), hTextAlign(Align::NONE), vTextAlign(Align::NONE) {
         UpdateTexture();
     }
 
     TextElement::~TextElement() {
         delete texture;
+        delete sprite;
     }
 
     void TextElement::UpdateTexture() {
-        size = font->GetStringBounds(textData).size;
-        size = size.max(olc::vi2d({16,16}));
+
+        if(texture == nullptr || sprite == nullptr){
+            size = font->GetStringBounds(textData).size;
+
+            size = size.max(olc::vi2d({1024,1024}));
+
+            sprite = new olc::Sprite(size.x, size.y);
+            texture = new olc::Decal(sprite);
+        }
+
+        if(font->RenderStringToSprite(textData, color, sprite) == nullptr) return;
+
+        size = font->GetRenderedStringBounds().size;
 
         switch(hTextAlign){ // update x origin based on auto text alignment
             case Align::NONE: break;
@@ -35,21 +47,7 @@ namespace olc {
             case Align::BOTTOM: origin.y = size.y; break;
         }
 
-        if(texture == nullptr){
-            auto spr = std::make_shared<olc::Sprite>(size.x, size.y);
-            texture = new ResourceTexture( { spr, olc::Decal(spr.get()) });
-        } else {
-            olc::Sprite& spr = *(texture->sprite);
-            if(spr.width < size.x || spr.height < size.y){ // Manually Resize Sprite -- oof
-                spr.width = size.x;
-                spr.height = size.y;
-                spr.pColData.resize(size.x * size.y, olc::BLANK);
-            }
-        }
-
-        if(font->RenderStringToSprite(textData, color, texture->sprite.get()) == nullptr) return;
-
-        texture->texture.Update();
+        texture->Update();
     }
 
     void TextElement::UpdateString(const std::string& string) {
@@ -60,9 +58,9 @@ namespace olc {
 
     void TextElement::Draw(View* view) {
         if(view != nullptr) {
-            view->DrawRotatedDecal(position, &texture->texture, rotation, origin, scale, blend);
+            view->DrawRotatedDecal(position, texture, rotation, origin, scale, blend);
         } else {
-            pge->DrawRotatedDecal(position, &texture->texture, rotation, origin, scale, blend);
+            pge->DrawRotatedDecal(position, texture, rotation, origin, scale, blend);
         }
     }
 }

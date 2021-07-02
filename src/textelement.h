@@ -9,7 +9,8 @@ namespace olc {
     class TextElement : public Element {
         std::string textData;
         olc::FontAsset font;
-        ResourceTexture* texture;
+        olc::Decal* texture;
+        olc::Sprite* sprite;
         olc::Pixel color;
         olc::vi2d size;
 
