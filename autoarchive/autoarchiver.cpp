@@ -7,7 +7,7 @@
 
 namespace fs = std::filesystem;
 
-bool autoExportArchive(const std::string& dir = ".\\", const std::string& dest = "archive.dat") {
+bool autoExportArchive(const std::string& dir = ".\\", const std::string& dest = "archive.dat", const std::string& name = "unknown") {
     std::cout << "Find files...\n";
     std::vector<fs::path> paths;
 
@@ -21,7 +21,7 @@ bool autoExportArchive(const std::string& dir = ".\\", const std::string& dest =
     ArchiveFileExporter archive;
 
     std::cout << "Sign Archive...\n";
-    archive.SignArchive("test-archive-JMSCREATOR");
+    archive.SignArchive(name);
 
     std::cout << "Add Files To Archive...\n";
     size_t index = 0;
@@ -49,12 +49,21 @@ bool autoExportArchive(const std::string& dir = ".\\", const std::string& dest =
     }
 
     std::cout << "Export Archive...\n";
-    return archive.SaveArchive(dest, "Temp Archive");
+    return archive.SaveArchive(dest, name);
 }
 
 int main(int argc, const char** argv) {
     fs::path path = fs::path(argv[0]);
-    std::string wdir = path.root_path().string() + path.relative_path().replace_filename("").string();
+    std::string wdir = path.root_path().string() + path.relative_path().replace_filename("").string(),
+                output = "archive.dat",
+                name = "";
 
-    return (argc > 1 ? autoExportArchive(wdir, argv[1]) : autoExportArchive(wdir)) ? 0 : 1;
+    if(argc > 1){
+        output = argv[1];
+    }
+    if(argc > 2){
+        name = argv[2];
+    }
+
+    return (int) !autoExportArchive(wdir, output, name);
 }
