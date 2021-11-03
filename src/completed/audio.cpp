@@ -181,6 +181,7 @@ namespace olc {
                     samples[i] = (short)(((long long int*)data)[i] >> 48);
                 break;
             default:
+                delete samples;
                 samples = nullptr;
                 return false;
         }
