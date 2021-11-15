@@ -164,7 +164,7 @@ namespace olc {
             ResourceData raw = GetRaw(name);
             if(raw.type != AssetReference::SOUND) return nullptr;
 
-            sound.reset(new olc::SoundBuffer()); // load port audio sound instance
+            sound.reset(new SoundBuffer()); // load port audio sound instance
 
             if(raw.length != 0){
                 if(!sound->loadOGGFromMemory(raw.data, raw.length))

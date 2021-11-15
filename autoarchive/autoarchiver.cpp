@@ -8,11 +8,16 @@
 namespace fs = std::filesystem;
 
 bool autoExportArchive(const std::string& dir = ".\\", const std::string& dest = "archive.dat", const std::string& name = "unknown") {
-    std::cout << "Find files...\n";
+    std::string wdir = dir;
+    if(!fs::is_directory(wdir)) wdir = ".\\";
+
+    std::cout << "Find files in " << wdir << "...\n";
     std::vector<fs::path> paths;
 
-    fs::directory_iterator fdir(dir);
+
+    fs::directory_iterator fdir(wdir);
     for(fs::path p : fdir){
+        if(fs::is_directory(p)) continue;
         paths.push_back(p);
     }
 

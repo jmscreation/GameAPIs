@@ -1,44 +1,85 @@
 @echo off
-REM		Build Script
+::		Custom Build Script 2.0
+::
+::       Custom library support
+::
+::     Set Compiler Settings Here
 
-REM Set Compiler Settings Here
 
-cls
-
+:: Compiler Specification And Build Settings
 set CPP=c++
 set GPP=g++
+set GCC=gcc
 set OUTPUT=program.exe
 set DEBUGMODE=1
+set COMMANDLINE=1
 
-set BUILD_COMPLETED=0
-set REBUILD_RESOURCES=0
 set LINK_ONLY=0
 set VERBOSE=0
 
+set REBUILD_SOURCE_DIRECTORIES=1
+set REBUILD_SOURCE_LIBRARIES=0
+set REBUILD_RESOURCES=0
 set ASYNC_BUILD=1
 
-set COMPILER_FLAGS=-std=c++20
-set ADDITIONAL_LIBRARIES=-static-libstdc++ -lpthread -static -lportaudio -lsetupapi -lwinmm -luser32 -lgdi32 -lopengl32 -lShlwapi -ldwmapi -lstdc++fs -lpng -lz -lfreetype
-set ADDITIONAL_LIBDIRS=-Llibrary
-set ADDITIONAL_INCLUDEDIRS=-Ilibrary -Isrc\completed -Isrc -Iresources
+:: Configure Source For Compiling And Additional Custom Library Directories / Names
+set SOURCE_DIRECTORIES=systemtest src library\srclibs resources
+set INCLUDE_DIRECTORIES=systemtest src library\srclibs resources
+set LIBRARY_DIRECTORIES=library\json-loader\librapidjson library\json-loader library\libaudio\libportaudio library\libaudio library\libfreetype library\libpng library\libz
+set LIBRARY_NAMES=png64 zlib64 freetype64 portaudio64 setupapi winmm user32 gdi32 opengl32 Shlwapi dwmapi stdc++fs
 
-del %OUTPUT% 2>nul
+:: Custom Library Support Directory Names
+set LIBRARY_DIRECTORY_NAME=lib\windows
+set INCLUDE_DIRECTORY_NAME=include
+set SOURCE_DIRECTORY_NAME=src
+
+:: Additional Compiler Flags And Configuration Settings
+set CPP_COMPILER_FLAGS=-std=c++20
+set C_COMPILER_FLAGS=
+set OBJECT_DIRECTORY=.objs
+
+:: Advanced / Extra Command Line Settings For Building / Linking
+set ADDITIONAL_INCLUDEDIRS=
+set ADDITIONAL_LIBRARIES=-static-libstdc++ -static-libgcc -static
+set ADDITIONAL_LIBDIRS=
+
+:: Local Cleanup
+
+del /S /Q "systemtest\%OBJECT_DIRECTORY%\*.o" 2>nul
+
+:: ---------- Build Script Start -----------
+
+cls
+:: Force current directory to program directory
+
+pushd "%~dp0"
 
 setlocal enabledelayedexpansion
 
+:: Configure Raw MinGW Command Line From Custom Settings
+(for %%D in (%INCLUDE_DIRECTORIES%) do (
+	set ADDITIONAL_INCLUDEDIRS=!ADDITIONAL_INCLUDEDIRS! -I%%D
+))
+
+:: Source directories are separated for libraries
+set LIBRARY_SOURCE_DIRECTORIES=
+
+(for %%D in (%LIBRARY_DIRECTORIES%) do (
+	set ADDITIONAL_INCLUDEDIRS=!ADDITIONAL_INCLUDEDIRS! -I%%D\!INCLUDE_DIRECTORY_NAME!
+	set LIBRARY_SOURCE_DIRECTORIES=!LIBRARY_SOURCE_DIRECTORIES! %%D\!SOURCE_DIRECTORY_NAME!
+	set ADDITIONAL_LIBDIRS=!ADDITIONAL_LIBDIRS! -L%%D\!LIBRARY_DIRECTORY_NAME!
+))
+
+(for %%D in (%LIBRARY_NAMES%) do (
+	set ADDITIONAL_LIBRARIES=!ADDITIONAL_LIBRARIES! -l%%D
+))
+
+::----------------------
+
+del %OUTPUT% 2>nul
 
 if %LINK_ONLY% GTR 0 (
 	goto linker
-)
-
-if %REBUILD_RESOURCES% GTR 0 (
-	echo Packing Archive...
-	start /B /WAIT "Archive" extra/archiver resources/archive.dat
-
-	echo Generating Precompiled Archive Data Buffer...
-	cd resources
-	start /B /WAIT "Archive" bin2cpp archive.dat archive_data test_archive_data
-	cd ..\
 )
 
 if %DEBUGMODE% GTR 0 (
@@ -53,69 +94,105 @@ if %ASYNC_BUILD% GTR 0 (
 	set WAIT=/WAIT
 )
 
-del /S /Q ".objs64\*.o" >nul 2>nul
-del /S /Q "systemtest\*.o" >nul 2>nul
+set OBJECT_DIRS=
 
-if not exist .objs64 (
-	echo Creating Object Directory Structure...
-	mkdir .objs64
-)
+:: Delete objects from object directories / populate object directories array
+(for %%D in (%SOURCE_DIRECTORIES%) do (
+	if %REBUILD_SOURCE_DIRECTORIES% GTR 0 (
+		del /S /Q "%%D\%OBJECT_DIRECTORY%\*.o" 2>nul
+	)
+	set OBJECT_DIRS=!OBJECT_DIRS! %%D\!OBJECT_DIRECTORY!
+))
 
-if %BUILD_COMPLETED% GTR 0 (
-	del /S /Q "src\completed\*.o" >nul 2>nul
-)
+(for %%D in (%LIBRARY_SOURCE_DIRECTORIES%) do (
+	if %REBUILD_SOURCE_LIBRARIES% GTR 0 (
+		del /S /Q "%%D\%OBJECT_DIRECTORY%\*.o" 2>nul
+	)
+	set OBJECT_DIRS=!OBJECT_DIRS! %%D\!OBJECT_DIRECTORY!
+))
+
+:: Create Object Directory Structure
+(for %%D in (%SOURCE_DIRECTORIES%) do (
+	if exist %%D\ (
+		if not exist %%D\%OBJECT_DIRECTORY% (
+			echo Creating Object Directory Structure...
+			mkdir %%D\%OBJECT_DIRECTORY%
+		)
+	)
+))
+(for %%D in (%LIBRARY_SOURCE_DIRECTORIES%) do (
+	if exist %%D\ (
+		if not exist %%D\%OBJECT_DIRECTORY% (
+			echo Creating Object Directory Structure...
+			mkdir %%D\%OBJECT_DIRECTORY%
+		)
+	)
+))
+
+
+:: -------- Script Customization -> Build Resources -----------
 
 if %REBUILD_RESOURCES% GTR 0 (
-	del /S /Q "resources\*.o" >nul 2>nul
+	echo Packing Archive...
+	start /B /WAIT "Archive" extra/archiver resources/archive.dat
+
+	echo Generating Precompiled Archive Data Buffer...
+	pushd resources
+	start /B /WAIT "Archive" bin2cpp archive.dat archive_data test_archive_data
+	popd
 )
 
-echo Building Resource Files...
-for %%F in (resources\*.cpp) do (
-	if not exist resources\%%~nF.o (
-		echo Building %%~nF.o
-		if %VERBOSE% GTR 0 (
-			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o resources\%%~nF.o
-		)
-		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o resources\%%~nF.o
+:: ------------------------------------
+
+
+(for %%D in (%LIBRARY_SOURCE_DIRECTORIES%) do (
+	echo Building Library Files For %%D...
+	if exist %%D\ (
+		call :compile_function %%D cpp %CPP% "%CPP_COMPILER_FLAGS%"
+		call :compile_function %%D c %GCC% "%C_COMPILER_FLAGS%"
+	) else (
+		echo Skipping non-existent directory...
 	)
-)
+))
 
-echo Re-Building Completed API Files...
-for %%F in (src\completed\*.cpp) do (
-	if not exist src\completed\%%~nF.o (
-		echo Building %%~nF.o
-		if %VERBOSE% GTR 0 (
-			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o src\completed\%%~nF.o
-		)
-		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o src\completed\%%~nF.o
+(for %%D in (%SOURCE_DIRECTORIES%) do (
+	echo Building Source Files For %%D...
+	if exist %%D\ (
+		call :compile_function %%D cpp %CPP% "%CPP_COMPILER_FLAGS%"
+		call :compile_function %%D c %GCC% "%C_COMPILER_FLAGS%"
+	) else (
+		echo Skipping non-existent directory...
 	)
-)
+))
 
-echo Building API Files...
-for %%F in (src\*.cpp) do (
-	if not exist .objs64\%%~nF.o (
-		echo Building %%~nF.o
-		if %VERBOSE% GTR 0 (
-			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o .objs64\%%~nF.o
+goto loop
+
+:: ---------- Compiler Function -----------
+::	SourceDirctory FileExtention Compiler CompilerFlags
+:compile_function
+	set OBJ_DIR=%1\%OBJECT_DIRECTORY%
+	set /a n=0
+	for /R %1 %%F in (*.%2) do (
+		if not exist !OBJ_DIR!\%~n3_%%~nF!n!.o (
+			echo Building %~n3_%%~nF!n!.o
+			start /B %WAIT% "%%~nF!n!.o" %3 %ADDITIONAL_INCLUDEDIRS% %~4 %DEBUG_INFO% -c %%F -o !OBJ_DIR!\%~n3_%%~nF!n!.o
+
+			if %VERBOSE% GTR 0 (
+				echo %3 %ADDITIONAL_INCLUDEDIRS% %~4 %DEBUG_INFO% -c %%F -o !OBJ_DIR!\%~n3_%%~nF!n!.o
+			)
 		)
-		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o .objs64\%%~nF.o
+		set /a n+=1
 	)
-)
+goto close
+::--------------------------------------
 
-echo Building System Test Files...
-for %%F in (systemtest\*.cpp) do (
-	if not exist systemtest\%%~nF.o (
-		echo Building %%~nF.o
-		if %VERBOSE% GTR 0 (
-			echo %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o systemtest\%%~nF.o
-		)
-		start /B %WAIT% "%%~nF.o" %CPP% %ADDITIONAL_INCLUDEDIRS% %COMPILER_FLAGS% %DEBUG_INFO% -c %%F -o systemtest\%%~nF.o
-	)
-)
-
-REM Wait for building process to finish
+:: Wait for building process to finish
 :loop
-for /f %%G in ('tasklist ^| find /c "%CPP%"') do ( set count=%%G )
+set /A count=0
+for /f %%G in ('tasklist ^| find /c "%CPP%"') do ( set /A count+=%%G )
+for /f %%G in ('tasklist ^| find /c "%GCC%"') do ( set /A count+=%%G )
+for /f %%G in ('tasklist ^| find /c "%GPP%"') do ( set /A count+=%%G )
+
 if %count%==0 (
 	goto linker
 ) else (
@@ -126,15 +203,18 @@ if %count%==0 (
 :linker
 
 set "files="
-for /f "delims=" %%A in ('dir /b /a-d "src\completed\*.o" ') do set "files=!files! src\completed\%%A"
-for /f "delims=" %%A in ('dir /b /a-d "resources\*.o" ') do set "files=!files! resources\%%A"
-for /f "delims=" %%A in ('dir /b /a-d "systemtest\*.o" ') do set "files=!files! systemtest\%%A"
-for /f "delims=" %%A in ('dir /b /a-d ".objs64\%*" ') do set "files=!files! .objs64\%%A"
+
+:: Find All Object Files
+(for %%D in (%OBJECT_DIRS%) do (
+	if exist %%D\ (
+		for /f "delims=" %%A in ('dir /b /a-d "%%D\*.o" ') do set "files=!files! %%D\%%A"
+	)
+))
 
 :link
 echo Linking Executable...
 
-if %DEBUGMODE% GTR 0 (
+if %COMMANDLINE% GTR 0 (
 	set MWINDOWS=
 ) else (
 	set MWINDOWS=-mwindows
@@ -152,3 +232,7 @@ if exist .\%OUTPUT% (
 ) else (
 	echo Build Failed!
 )
+
+
+:: This control is for batch processing functions to return
+:close

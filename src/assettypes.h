@@ -4,6 +4,7 @@
 #include "olcPixelGameEngine.h"
 #include "olcPGEX_TTF.h"
 #include "audio.h"
+
 #include <memory>
 #include <string>
 
@@ -57,7 +58,7 @@ namespace olc {
     };
 
     typedef std::shared_ptr<Frame> AnimationAsset;
-    typedef std::shared_ptr<olc::SoundBuffer> SoundAsset;
+    typedef std::shared_ptr<SoundBuffer> SoundAsset;
     typedef std::shared_ptr<olc::Font> FontAsset;
 
 }
