@@ -4,7 +4,9 @@ namespace olc {
 
     // Construct
     Animation::Animation(const Frame& animationData):
-        curFrame(0), curRegion("default"), curRegionFrame(0), curPosition({0.0f,0.0f}), frameLocation(animationData) {}
+        curFrame(0), curRegion("default"), curRegionFrame(0), curPosition({0.0f,0.0f}), frameLocation(animationData) {
+            translateFrame();
+        }
 
     // Destruct
     Animation::~Animation() {}
