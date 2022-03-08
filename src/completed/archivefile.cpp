@@ -57,6 +57,8 @@ bool ArchiveFile::LoadArchive(const char* data, size_t length) {
     table.reserve(header.fileCount);
 
     for(size_t i=0; i < header.fileCount; ++i){
+        if(archiveError) return false;
+
         FileHeader file;
         file.name = ReadString();
         file.type = ReadString();
@@ -72,6 +74,7 @@ bool ArchiveFile::LoadArchive(const char* data, size_t length) {
     fileDataRegion = archive.pos;
 
     for(FileHeader& f : table){
+        if(archiveError) return false;
         f.buffer = archive.buffer + GetDataRegion() + f.offset; // set file buffer position to file offset in memory
     }
     return true;
