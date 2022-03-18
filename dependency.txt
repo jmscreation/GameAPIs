@@ -2,5 +2,5 @@
 https://github.com/jmscreation/libjsonloader	main
 https://github.com/jmscreation/libaudio		main
 https://github.com/jmscreation/libfreetype 	main
-https://github.com/jmscreation/libpng   	main
+https://github.com/jmscreation/libpng   		main
 https://github.com/jmscreation/libz		main

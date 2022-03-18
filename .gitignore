@@ -31,8 +31,9 @@
 *.app
 
 #Other files
-extra
 libraries
+.vscode
 
 # Allow Tools
-!resources/bin2cpp.exe
+!bin/*.exe
+!bin/*.dll
