@@ -1,3 +1,9 @@
+/*
+    Original Repository: https://github.com/gorbit99/olcPGEX_TTF
+    Modified by jmscreator:
+        Added new Render methods and Decal generation methods for rendering to Decals
+*/
+
 #ifndef OLC_PGEX_TTF_H
 #define OLC_PGEX_TTF_H
 
