@@ -11,14 +11,14 @@ set CPP=c++
 set GPP=g++
 set GCC=gcc
 set OUTPUT=archiver.exe
-set DEBUGMODE=1
+set DEBUGMODE=0
 set COMMANDLINE=1
 
 set LINK_ONLY=0
 set VERBOSE=0
 
-set REBUILD_SOURCE_DIRECTORIES=0
-set REBUILD_SOURCE_LIBRARIES=0
+set REBUILD_SOURCE_DIRECTORIES=1
+set REBUILD_SOURCE_LIBRARIES=1
 set ASYNC_BUILD=1
 
 :: Configure Source For Compiling And Additional Custom Library Directories / Names
