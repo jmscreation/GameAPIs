@@ -32,6 +32,7 @@ namespace gapi {
                 return false;
             }
             pos += sz;
+            return true;
         }
 
         template<class T>
