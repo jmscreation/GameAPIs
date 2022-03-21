@@ -21,6 +21,19 @@ namespace gapi {
 
     public:
 
+        inline const char* getCurPointer() {
+            if(!readonly) return nullptr;
+            return rdata + pos;
+        }
+
+        inline bool ignoreBytes(size_t sz) {
+            if(pos + sz - 1 >= length){
+                error = true;
+                return false;
+            }
+            pos += sz;
+        }
+
         template<class T>
         bool readData(T& rval, bool peek=false) {
             if(!readonly) return false;
