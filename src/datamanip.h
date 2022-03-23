@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <memory>
 #include <numeric>
@@ -52,6 +53,8 @@ namespace gapi {
             return true;
         };
 
+        bool readData(std::string& rval, bool peek=false);
+
         template<class T>
         bool writeData(const T& rval) {
             if(readonly) return false;
@@ -59,6 +62,8 @@ namespace gapi {
 
             return wdata->write(reinterpret_cast<const char*>(&rval), sz).good();
         };
+
+        bool writeData(const std::string& rval);
 
         inline bool exportData(std::stringstream& stream) { // append data to stream
             if(readonly) return false;
