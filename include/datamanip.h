@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <memory>
 #include <numeric>
@@ -21,6 +22,20 @@ namespace gapi {
 
     public:
 
+        inline const char* getCurPointer() {
+            if(!readonly) return nullptr;
+            return rdata + pos;
+        }
+
+        inline bool ignoreBytes(size_t sz) {
+            if(pos + sz - 1 >= length){
+                error = true;
+                return false;
+            }
+            pos += sz;
+            return true;
+        }
+
         template<class T>
         bool readData(T& rval, bool peek=false) {
             if(!readonly) return false;
@@ -38,6 +53,8 @@ namespace gapi {
             return true;
         };
 
+        bool readData(std::string& rval, bool peek=false);
+
         template<class T>
         bool writeData(const T& rval) {
             if(readonly) return false;
@@ -45,6 +62,8 @@ namespace gapi {
 
             return wdata->write(reinterpret_cast<const char*>(&rval), sz).good();
         };
+
+        bool writeData(const std::string& rval);
 
         inline bool exportData(std::stringstream& stream) { // append data to stream
             if(readonly) return false;
