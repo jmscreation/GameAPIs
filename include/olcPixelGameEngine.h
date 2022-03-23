@@ -572,7 +572,7 @@ namespace olc
 		K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
 		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
 		UP, DOWN, LEFT, RIGHT,
-		SPACE, TAB, SHIFT, CTRL, INS, DEL, HOME, END, PGUP, PGDN,
+		SPACE, TAB, SHIFT, ALT, CTRL, INS, DEL, HOME, END, PGUP, PGDN,
 		BACK, ESCAPE, RETURN, ENTER, PAUSE, SCROLL,
 		NP0, NP1, NP2, NP3, NP4, NP5, NP6, NP7, NP8, NP9,
 		NP_MUL, NP_DIV, NP_ADD, NP_SUB, NP_DECIMAL, PERIOD,
@@ -4683,7 +4683,7 @@ namespace olc
 			mapKeys[VK_BACK] = Key::BACK; mapKeys[VK_ESCAPE] = Key::ESCAPE; mapKeys[VK_RETURN] = Key::ENTER; mapKeys[VK_PAUSE] = Key::PAUSE;
 			mapKeys[VK_SCROLL] = Key::SCROLL; mapKeys[VK_TAB] = Key::TAB; mapKeys[VK_DELETE] = Key::DEL; mapKeys[VK_HOME] = Key::HOME;
 			mapKeys[VK_END] = Key::END; mapKeys[VK_PRIOR] = Key::PGUP; mapKeys[VK_NEXT] = Key::PGDN; mapKeys[VK_INSERT] = Key::INS;
-			mapKeys[VK_SHIFT] = Key::SHIFT; mapKeys[VK_CONTROL] = Key::CTRL;
+			mapKeys[VK_SHIFT] = Key::SHIFT; mapKeys[VK_CONTROL] = Key::CTRL; mapKeys[VK_MENU] = Key::ALT;
 			mapKeys[VK_SPACE] = Key::SPACE;
 
 			mapKeys[0x30] = Key::K0; mapKeys[0x31] = Key::K1; mapKeys[0x32] = Key::K2; mapKeys[0x33] = Key::K3; mapKeys[0x34] = Key::K4;
