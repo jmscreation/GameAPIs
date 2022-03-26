@@ -4646,7 +4646,7 @@ namespace olc
 			if (bFullScreen)
 			{
 				dwExStyle = 0;
-				dwStyle = WS_VISIBLE | WS_POPUP;
+				dwStyle = WS_VISIBLE | WS_POPUPWINDOW;
 				HMONITOR hmon = MonitorFromWindow(olc_hWnd, MONITOR_DEFAULTTONEAREST);
 				MONITORINFO mi = { sizeof(mi) };
 				if (!GetMonitorInfo(hmon, &mi)) return olc::rcode::FAIL;
