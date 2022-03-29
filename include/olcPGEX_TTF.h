@@ -319,10 +319,11 @@ namespace olc {
         }
 
         olc::Sprite *RenderStringToSprite(std::u32string string,
-                                          olc::Pixel color, olc::Sprite* sprite=nullptr) {
+                                          olc::Pixel color, olc::Sprite* psprite=nullptr) {
             olc::FontRect rect = GetStringBounds(string);
+            olc::Sprite* sprite = psprite;
 
-            if(sprite == nullptr){
+            if(psprite == nullptr){
                 sprite = new olc::Sprite{std::max(rect.size.x, 1), std::max(rect.size.y, 1)};
             }
 
@@ -388,6 +389,7 @@ namespace olc {
                     } else {
                         std::cerr << errorString << "\n";
                     }
+                    if(psprite == nullptr) delete sprite; // prevent memory leak
                     return nullptr;
                 }
 
