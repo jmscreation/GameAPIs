@@ -23,9 +23,9 @@ set REBUILD_RESOURCES=0
 set ASYNC_BUILD=1
 
 :: Configure Source For Compiling And Additional Custom Library Directories / Names
-set SOURCE_DIRECTORIES=systemtest src srclibs resources
-set INCLUDE_DIRECTORIES=systemtest src srclibs resources
-set LIBRARY_DIRECTORIES=libraries\librapidjson-main libraries\libjsonloader-main libraries\libportaudio-main libraries\libaudio-main libraries\libfreetype-main libraries\libpng-main libraries\libz-main
+set SOURCE_DIRECTORIES=systemtest resources
+set INCLUDE_DIRECTORIES=systemtest resources
+set LIBRARY_DIRECTORIES=libraries\GameAPIs-stable libraries\librapidjson-main libraries\libjsonloader-main libraries\libportaudio-main libraries\libaudio-main libraries\libfreetype-main libraries\libpng-main libraries\libz-main
 set LIBRARY_NAMES=png64 zlib64 freetype64 portaudio64 setupapi winmm user32 gdi32 opengl32 Shlwapi dwmapi stdc++fs
 
 :: Custom Library Support Directory Names

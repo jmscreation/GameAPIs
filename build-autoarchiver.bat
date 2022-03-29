@@ -22,9 +22,9 @@ set REBUILD_SOURCE_LIBRARIES=1
 set ASYNC_BUILD=1
 
 :: Configure Source For Compiling And Additional Custom Library Directories / Names
-set SOURCE_DIRECTORIES=autoarchive src srclibs
-set INCLUDE_DIRECTORIES=autoarchive src srclibs
-set LIBRARY_DIRECTORIES=libraries\librapidjson-main libraries\libjsonloader-main libraries\libportaudio-main libraries\libaudio-main libraries\libfreetype-main libraries\libpng-main libraries\libz-main
+set SOURCE_DIRECTORIES=autoarchive
+set INCLUDE_DIRECTORIES=autoarchive
+set LIBRARY_DIRECTORIES=libraries\GameAPIs-stable libraries\librapidjson-main libraries\libjsonloader-main libraries\libportaudio-main libraries\libaudio-main libraries\libfreetype-main libraries\libpng-main libraries\libz-main
 set LIBRARY_NAMES=png64 zlib64 freetype64 portaudio64 setupapi winmm user32 gdi32 opengl32 Shlwapi dwmapi stdc++fs
 
 :: Custom Library Support Directory Names
