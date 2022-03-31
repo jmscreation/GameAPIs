@@ -863,6 +863,7 @@ namespace olc
 		virtual void       UpdateViewport(const olc::vi2d& pos, const olc::vi2d& size) = 0;
 		virtual void       ClearBuffer(olc::Pixel p, bool bDepth) = 0;
 		static olc::PixelGameEngine* ptrPGE;
+		static std::unique_ptr<Renderer> renderer;
 	};
 
 	class Platform
@@ -879,15 +880,12 @@ namespace olc
 		virtual olc::rcode StartSystemEventLoop() = 0;
 		virtual olc::rcode HandleSystemEvent() = 0;
 		static olc::PixelGameEngine* ptrPGE;
+		static std::map<size_t, uint8_t> mapKeys;
+		static std::unique_ptr<Platform> platform;
 		inline virtual void ShowWindow(bool bShow) {}
 	};
 
 	class PGEX;
-
-	// The Static Twins (plus one)
-	static std::unique_ptr<Renderer> renderer;
-	static std::unique_ptr<Platform> platform;
-	static std::map<size_t, uint8_t> mapKeys;
 
 	// O------------------------------------------------------------------------------O
 	// | olc::PixelGameEngine - The main BASE class for your application              |
@@ -928,7 +926,7 @@ namespace olc
 		// Gets the mouse as a vector to keep Tarriest happy
 		const olc::vi2d& GetMousePos() const;
 
-		static const std::map<size_t, uint8_t>& GetKeyMap() { return mapKeys; }
+		static const std::map<size_t, uint8_t>& GetKeyMap() { return Platform::mapKeys; }
 
 	public: // Utility
 		// Returns the width of the screen in "pixels"
@@ -1231,6 +1229,11 @@ namespace olc
 	// O------------------------------------------------------------------------------O
 	// | olc::Pixel IMPLEMENTATION                                                    |
 	// O------------------------------------------------------------------------------O
+
+	std::map<size_t, uint8_t> Platform::mapKeys;
+	std::unique_ptr<Renderer> Renderer::renderer;
+	std::unique_ptr<Platform> Platform::platform;
+
 	Pixel::Pixel()
 	{ r = 0; g = 0; b = 0; a = nDefaultAlpha; }
 
@@ -1445,7 +1448,7 @@ namespace olc
 		id = -1;
 		if (spr == nullptr) return;
 		sprite = spr;
-		id = renderer->CreateTexture(sprite->width, sprite->height, filter, clamp);
+		id = Renderer::renderer->CreateTexture(sprite->width, sprite->height, filter, clamp);
 		Update();
 	}
 
@@ -1459,22 +1462,22 @@ namespace olc
 	{
 		if (sprite == nullptr) return;
 		vUVScale = { 1.0f / float(sprite->width), 1.0f / float(sprite->height) };
-		renderer->ApplyTexture(id);
-		renderer->UpdateTexture(id, sprite);
+		Renderer::renderer->ApplyTexture(id);
+		Renderer::renderer->UpdateTexture(id, sprite);
 	}
 
 	void Decal::UpdateSprite()
 	{
 		if (sprite == nullptr) return;
-		renderer->ApplyTexture(id);
-		renderer->ReadTexture(id, sprite);
+		Renderer::renderer->ApplyTexture(id);
+		Renderer::renderer->ReadTexture(id, sprite);
 	}
 
 	Decal::~Decal()
 	{
 		if (id != -1)
 		{
-			renderer->DeleteTexture(id);
+			Renderer::renderer->DeleteTexture(id);
 			id = -1;
 		}
 	}
@@ -1726,33 +1729,33 @@ namespace olc
 			layer.bUpdate = true;
 		}
 		SetDrawTarget(nullptr);
-		renderer->ClearBuffer(olc::BLACK, true);
-		renderer->DisplayFrame();
-		renderer->ClearBuffer(olc::BLACK, true);
-		renderer->UpdateViewport(vViewPos, vViewSize);
+		Renderer::renderer->ClearBuffer(olc::BLACK, true);
+		Renderer::renderer->DisplayFrame();
+		Renderer::renderer->ClearBuffer(olc::BLACK, true);
+		Renderer::renderer->UpdateViewport(vViewPos, vViewSize);
 	}
 
 #if !defined(PGE_USE_CUSTOM_START)
 	olc::rcode PixelGameEngine::Start()
 	{
-		if (platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
+		if (Platform::platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
 
 		// Construct the window
-		if (platform->CreateWindowPane({ 30,30 }, vWindowSize, bFullScreen) != olc::OK) return olc::FAIL;
+		if (Platform::platform->CreateWindowPane({ 30,30 }, vWindowSize, bFullScreen) != olc::OK) return olc::FAIL;
 		olc_UpdateWindowSize(vWindowSize.x, vWindowSize.y);
-		platform->SetWindowTitle(sAppName);
+		Platform::platform->SetWindowTitle(sAppName);
 
 		// Start the thread
 		bAtomActive = true;
 		std::thread t = std::thread(&PixelGameEngine::EngineThread, this);
 
 		// Some implementations may form an event loop here
-		platform->StartSystemEventLoop();
+		Platform::platform->StartSystemEventLoop();
 
 		// Wait for thread to be exited
 		t.join();
 
-		if (platform->ApplicationCleanUp() != olc::OK) return olc::FAIL;
+		if (Platform::platform->ApplicationCleanUp() != olc::OK) return olc::FAIL;
 
 		return olc::OK;
 	}
@@ -2104,7 +2107,7 @@ namespace olc
 	}
 
 	void PixelGameEngine::ClearBuffer(Pixel p, bool bDepth)
-	{ renderer->ClearBuffer(p, bDepth);	}
+	{ Renderer::renderer->ClearBuffer(p, bDepth);	}
 
 	olc::Sprite* PixelGameEngine::GetFontSprite()
 	{ return fontSprite; }
@@ -3096,7 +3099,7 @@ namespace olc
 	{
 		// Allow platform to do stuff here if needed, since its now in the
 		// context of this thread
-		if (platform->ThreadStartUp() == olc::FAIL)	return;
+		if (Platform::platform->ThreadStartUp() == olc::FAIL)	return;
 
 		// Do engine context specific initialisation
 		olc_PrepareEngine();
@@ -3106,7 +3109,7 @@ namespace olc
 		if (!OnUserCreate()) bAtomActive = false;
 		for (auto& ext : vExtensions) ext->OnAfterUserCreate();
 
-		platform->ShowWindow(true);
+		Platform::platform->ShowWindow(true);
 
 		while (bAtomActive)
 		{
@@ -3121,13 +3124,13 @@ namespace olc
 			}
 		}
 
-		platform->ThreadCleanUp();
+		Platform::platform->ThreadCleanUp();
 	}
 
 	void PixelGameEngine::olc_PrepareEngine()
 	{
 		// Start OpenGL, the context is owned by the game thread
-		if (platform->CreateGraphics(bFullScreen, bEnableVSYNC, vViewPos, vViewSize) == olc::FAIL) return;
+		if (Platform::platform->CreateGraphics(bFullScreen, bEnableVSYNC, vViewPos, vViewSize) == olc::FAIL) return;
 
 		// Construct default font sheet
 		olc_ConstructFontSheet();
@@ -3155,7 +3158,7 @@ namespace olc
 		fLastElapsed = fElapsedTime;
 
 		// Some platforms will need to check for events
-		platform->HandleSystemEvent();
+		Platform::platform->HandleSystemEvent();
 
 		// Compare hardware input states from previous frame
 		auto ScanHardware = [&](HWButton* pKeys, bool* pStateOld, bool* pStateNew, uint32_t nKeyCount)
@@ -3189,7 +3192,7 @@ namespace olc
 		nMouseWheelDelta = nMouseWheelDeltaCache;
 		nMouseWheelDeltaCache = 0;
 
-		//	renderer->ClearBuffer(olc::BLACK, true);
+		//	Renderer::ClearBuffer(olc::BLACK, true);
 
 		// Handle Frame Update
 		bool bExtensionBlockFrame = false;
@@ -3201,14 +3204,14 @@ namespace olc
 		for (auto& ext : vExtensions) ext->OnAfterUserUpdate(fElapsedTime);
 
 		// Display Frame
-		renderer->UpdateViewport(vViewPos, vViewSize);
-		renderer->ClearBuffer(olc::BLACK, true);
+		Renderer::renderer->UpdateViewport(vViewPos, vViewSize);
+		Renderer::renderer->ClearBuffer(olc::BLACK, true);
 
 		// Layer 0 must always exist
 		vLayers[0].bUpdate = true;
 		vLayers[0].bShow = true;
 		SetDecalMode(DecalMode::NORMAL);
-		renderer->PrepareDrawing();
+		Renderer::renderer->PrepareDrawing();
 
 		for (auto layer = vLayers.rbegin(); layer != vLayers.rend(); ++layer)
 		{
@@ -3216,18 +3219,18 @@ namespace olc
 			{
 				if (layer->funcHook == nullptr)
 				{
-					renderer->ApplyTexture(layer->pDrawTarget.Decal()->id);
+					Renderer::renderer->ApplyTexture(layer->pDrawTarget.Decal()->id);
 					if (layer->bUpdate)
 					{
 						layer->pDrawTarget.Decal()->Update();
 						layer->bUpdate = false;
 					}
 
-					renderer->DrawLayerQuad(layer->vOffset, layer->vScale, layer->tint);
+					Renderer::renderer->DrawLayerQuad(layer->vOffset, layer->vScale, layer->tint);
 
 					// Display Decals in order for this layer
 					for (auto& decal : layer->vecDecalInstance)
-						renderer->DrawDecal(decal);
+						Renderer::renderer->DrawDecal(decal);
 					layer->vecDecalInstance.clear();
 				}
 				else
@@ -3239,7 +3242,7 @@ namespace olc
 		}
 
 		// Present Graphics to screen
-		renderer->DisplayFrame();
+		Renderer::renderer->DisplayFrame();
 
 		// Update Title Bar
 		fFrameTimer += fElapsedTime;
@@ -4605,16 +4608,16 @@ namespace olc
 
 		virtual olc::rcode ThreadCleanUp() override
 		{
-			renderer->DestroyDevice();
+			Renderer::renderer->DestroyDevice();
 			PostMessage(olc_hWnd, WM_DESTROY, 0, 0);
 			return olc::OK;
 		}
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
-			if (renderer->CreateDevice({ olc_hWnd }, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
+			if (Renderer::renderer->CreateDevice({ olc_hWnd }, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
 			{
-				renderer->UpdateViewport(vViewPos, vViewSize);
+				Renderer::renderer->UpdateViewport(vViewPos, vViewSize);
 				return olc::rcode::OK;
 			}
 			else
@@ -4810,15 +4813,15 @@ namespace olc
 
 		virtual olc::rcode ThreadCleanUp() override
 		{
-			renderer->DestroyDevice();
+			Renderer::renderer->DestroyDevice();
 			return olc::OK;
 		}
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
-			if (renderer->CreateDevice({ olc_Display, &olc_Window, olc_VisualInfo }, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
+			if (Renderer::renderer->CreateDevice({ olc_Display, &olc_Window, olc_VisualInfo }, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
 			{
-				renderer->UpdateViewport(vViewPos, vViewSize);
+				Renderer::renderer->UpdateViewport(vViewPos, vViewSize);
 				return olc::rcode::OK;
 			}
 			else
@@ -5060,15 +5063,15 @@ namespace olc {
 
 		virtual olc::rcode ThreadCleanUp() override
 		{
-			renderer->DestroyDevice();
+			Renderer::renderer->DestroyDevice();
 			return olc::OK;
 		}
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
-			if (renderer->CreateDevice({}, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
+			if (Renderer::renderer->CreateDevice({}, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
 			{
-				renderer->UpdateViewport(vViewPos, vViewSize);
+				Renderer::renderer->UpdateViewport(vViewPos, vViewSize);
 				return olc::rcode::OK;
 			}
 			else
@@ -5080,8 +5083,8 @@ namespace olc {
 				*bActiveRef = true;
 				return;
 			}
-			platform->ThreadCleanUp();
-			platform->ApplicationCleanUp();
+			Platform::platform->ThreadCleanUp();
+			Platform::platform->ApplicationCleanUp();
 			exit(0);
 		}
 
@@ -5143,7 +5146,7 @@ namespace olc {
 			assert(resultAddMethod);
 #endif
 
-			renderer->PrepareDevice();
+			Renderer::renderer->PrepareDevice();
 
 			if (bFullScreen)
 			{
@@ -5298,22 +5301,22 @@ namespace olc {
 	//Custom Start
 	olc::rcode PixelGameEngine::Start()
 	{
-		if (platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
+		if (Platform::platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
 
 		// Construct the window
-		if (platform->CreateWindowPane({ 30,30 }, vWindowSize, bFullScreen) != olc::OK) return olc::FAIL;
+		if (Platform::platform->CreateWindowPane({ 30,30 }, vWindowSize, bFullScreen) != olc::OK) return olc::FAIL;
 		olc_UpdateWindowSize(vWindowSize.x, vWindowSize.y);
 
-		if (platform->ThreadStartUp() == olc::FAIL)  return olc::FAIL;
+		if (Platform::platform->ThreadStartUp() == olc::FAIL)  return olc::FAIL;
 		olc_PrepareEngine();
 		if (!OnUserCreate()) return olc::FAIL;
 		Platform_GLUT::bActiveRef = &bAtomActive;
 		glutWMCloseFunc(Platform_GLUT::ExitMainLoop);
 		bAtomActive = true;
-		platform->StartSystemEventLoop();
+		Platform::platform->StartSystemEventLoop();
 
 		//This code will not even be run but why not
-		if (platform->ApplicationCleanUp() != olc::OK) return olc::FAIL;
+		if (Platform::platform->ApplicationCleanUp() != olc::OK) return olc::FAIL;
 
 		return olc::OK;
 	}
@@ -5351,7 +5354,7 @@ namespace olc {
 extern "C" 
 {
 	EMSCRIPTEN_KEEPALIVE inline int olc_OnPageUnload()
-	{ olc::platform->ApplicationCleanUp(); return 0; }
+	{ olc::Platform::platform->ApplicationCleanUp(); return 0; }
 }
 
 namespace olc
@@ -5370,13 +5373,13 @@ namespace olc
 		{ return olc::rcode::OK; }
 
 		virtual olc::rcode ThreadCleanUp() override
-		{ renderer->DestroyDevice(); return olc::OK; }
+		{ Renderer::renderer->DestroyDevice(); return olc::OK; }
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
-			if (renderer->CreateDevice({}, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
+			if (Renderer::renderer->CreateDevice({}, bFullScreen, bEnableVSYNC) == olc::rcode::OK)
 			{
-				renderer->UpdateViewport(vViewPos, vViewSize);
+				Renderer::renderer->UpdateViewport(vViewPos, vViewSize);
 				return olc::rcode::OK;
 			}
 			else
@@ -5709,7 +5712,7 @@ namespace olc
 				if (ptrPGE->OnUserDestroy())
 				{
 					emscripten_cancel_main_loop();
-					platform->ApplicationCleanUp();
+					Platform::platform->ApplicationCleanUp();
 				}
 				else
 				{
@@ -5723,14 +5726,14 @@ namespace olc
 	//Much of this is usually done in EngineThread, but that isn't used here
 	olc::rcode PixelGameEngine::Start()
 	{
-		if (platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
+		if (Platform::platform->ApplicationStartUp() != olc::OK) return olc::FAIL;
 
 		// Construct the window
-		if (platform->CreateWindowPane({ 30,30 }, vWindowSize, bFullScreen) != olc::OK) return olc::FAIL;
+		if (Platform::platform->CreateWindowPane({ 30,30 }, vWindowSize, bFullScreen) != olc::OK) return olc::FAIL;
 		olc_UpdateWindowSize(vWindowSize.x, vWindowSize.y);
 
 		// Some implementations may form an event loop here
-		if (platform->ThreadStartUp() == olc::FAIL)	return olc::FAIL;
+		if (Platform::platform->ThreadStartUp() == olc::FAIL)	return olc::FAIL;
 
 		// Do engine context specific initialisation
 		olc_PrepareEngine();
@@ -5743,14 +5746,14 @@ namespace olc
 		if (!OnUserCreate()) bAtomActive = false;
 		for (auto& ext : vExtensions) ext->OnAfterUserCreate();
 
-		platform->StartSystemEventLoop();
+		Platform::platform->StartSystemEventLoop();
 
 		//This causes a heap memory corruption in Emscripten for some reason
 		//Platform_Emscripten::bActiveRef = &bAtomActive;
 		emscripten_set_main_loop(&Platform_Emscripten::MainLoop, 0, 1);
 
 		// Wait for thread to be exited
-		if (platform->ApplicationCleanUp() != olc::OK) return olc::FAIL;
+		if (Platform::platform->ApplicationCleanUp() != olc::OK) return olc::FAIL;
 		return olc::OK;
 	}
 }
@@ -5805,58 +5808,58 @@ namespace olc
 
 
 #if defined(OLC_PLATFORM_WINAPI)
-		platform = std::make_unique<olc::Platform_Windows>();
+		Platform::platform = std::make_unique<olc::Platform_Windows>();
 #endif
 
 #if defined(OLC_PLATFORM_X11)
-		platform = std::make_unique<olc::Platform_Linux>();
+		Platform::platform = std::make_unique<olc::Platform_Linux>();
 #endif
 
 #if defined(OLC_PLATFORM_GLUT)
-		platform = std::make_unique<olc::Platform_GLUT>();
+		Platform::platform = std::make_unique<olc::Platform_GLUT>();
 #endif
 
 #if defined(OLC_PLATFORM_EMSCRIPTEN)
-		platform = std::make_unique<olc::Platform_Emscripten>();
+		Platform::platform = std::make_unique<olc::Platform_Emscripten>();
 #endif
 
 #if defined(OLC_PLATFORM_CUSTOM_EX)
-		platform = std::make_unique<OLC_PLATFORM_CUSTOM_EX>();
+		Platform::platform = std::make_unique<OLC_PLATFORM_CUSTOM_EX>();
 #endif
 
 
 
 #if defined(OLC_GFX_OPENGL10)
-		renderer = std::make_unique<olc::Renderer_OGL10>();
+		Renderer::renderer = std::make_unique<olc::Renderer_OGL10>();
 #endif
 
 #if defined(OLC_GFX_OPENGL33)
-		renderer = std::make_unique<olc::Renderer_OGL33>();
+		Renderer::renderer = std::make_unique<olc::Renderer_OGL33>();
 #endif
 
 #if defined(OLC_GFX_OPENGLES2)
-		renderer = std::make_unique<olc::Renderer_OGLES2>();
+		Renderer::renderer = std::make_unique<olc::Renderer_OGLES2>();
 #endif
 
 #if defined(OLC_GFX_DIRECTX10)
-		renderer = std::make_unique<olc::Renderer_DX10>();
+		Renderer::renderer = std::make_unique<olc::Renderer_DX10>();
 #endif
 
 #if defined(OLC_GFX_DIRECTX11)
-		renderer = std::make_unique<olc::Renderer_DX11>();
+		Renderer::renderer = std::make_unique<olc::Renderer_DX11>();
 #endif
 
 #if defined(OLC_GFX_CUSTOM_EX)
-		renderer = std::make_unique<OLC_RENDERER_CUSTOM_EX>();
+		Renderer::renderer = std::make_unique<OLC_RENDERER_CUSTOM_EX>();
 #endif
 
 		// Associate components with PGE instance
-		platform->ptrPGE = this;
-		renderer->ptrPGE = this;
+		Platform::platform->ptrPGE = this;
+		Renderer::renderer->ptrPGE = this;
 #else
 		olc::Sprite::loader = nullptr;
-		platform = nullptr;
-		renderer = nullptr;
+		Platform::platform = nullptr;
+		Renderer::renderer = nullptr;
 #endif
 	}
 }
