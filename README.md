@@ -24,3 +24,5 @@ libraries\libfreetype-main
 libraries\libpng-main
 libraries\libz-main
 ```
+
+The dependency tracker will automatically clone the packages into this `libraries` folder. If you are not using the dependency tracker, you must manually clone each dependent github repository into the given folder structure.
