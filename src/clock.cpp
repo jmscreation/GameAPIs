@@ -9,5 +9,15 @@ double Clock::getSeconds() const {
 }
 
 double Clock::getMilliseconds() const {
-    return double(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count()) / 1000.0;
+    return double(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start).count()) / 1000.0;
+}
+
+void Clock::setSeconds(double time) {
+    restart();
+    setMilliseconds(time * 1000.0);
+}
+
+void Clock::setMilliseconds(double time) {
+    restart();
+    start -= std::chrono::microseconds(int64_t(time * 1000.0));
 }

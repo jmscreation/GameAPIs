@@ -3,7 +3,7 @@
 
 #include <chrono>
 
-typedef std::chrono::time_point<std::chrono::high_resolution_clock> timepoint;
+typedef std::chrono::time_point<std::chrono::system_clock> timepoint;
 
 class Clock {
     timepoint start;
@@ -12,7 +12,9 @@ public:
     virtual ~Clock()=default;
     double getSeconds() const;
     double getMilliseconds() const;
-    inline void restart() { start = std::chrono::high_resolution_clock::now(); }
+    inline void restart() { start = std::chrono::system_clock::now(); }
+    void setSeconds(double time);
+    void setMilliseconds(double time);
 };
 
 #endif // __CLOCK_H__
