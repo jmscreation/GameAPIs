@@ -7,6 +7,12 @@
 	|  "What do you need? Pixels... Lots of Pixels..." - javidx9  |
 	+-------------------------------------------------------------+
 
+	+-------------------------------------------------------------+
+	|     		This PGE modification allows for better           |
+	|  			window management. - jmscreator					  |
+	|      THIS IS A MODIFIED VERSION - USE AT OWN RISK		      |
+	+-------------------------------------------------------------+
+
 	What is this?
 	~~~~~~~~~~~~~
 	olc::PixelGameEngine is a single file, cross platform graphics and userinput
@@ -282,6 +288,10 @@
 		  +Reintroduced sub-pixel decals
 		  +Modified DrawPartialDecal() to quantise and correctly sample from tile atlasses
 		  +olc::Sprite::GetPixel() - Clamp Mode
+
+	MOD:  +ShowWindow()
+		  +SetWindowVisible()
+		  +GetWindowPane()
 
 		  
     !! Apple Platforms will not see these updates immediately - Sorry, I dont have a mac to test... !!
@@ -878,8 +888,9 @@ namespace olc
 		virtual olc::rcode SetWindowTitle(const std::string& s) = 0;
 		virtual olc::rcode StartSystemEventLoop() = 0;
 		virtual olc::rcode HandleSystemEvent() = 0;
+		virtual void ShowWindow(bool bShow) = 0;
+		virtual void* GetWindowPane() = 0;
 		static olc::PixelGameEngine* ptrPGE;
-		inline virtual void ShowWindow(bool bShow) {}
 	};
 
 	class PGEX;
@@ -956,6 +967,10 @@ namespace olc
 		const olc::vi2d& GetPixelSize() const;
 		// Gets actual pixel scale
 		const olc::vi2d& GetScreenPixelSize() const;
+		// Sets the window visible or hidden
+		void SetWindowVisible(bool bShow) const;
+		// Gets the window handle platform specific
+		void* GetWindowPane() const;
 
 	public: // CONFIGURATION ROUTINES
 		// Layer targeting functions
@@ -1730,6 +1745,16 @@ namespace olc
 		renderer->DisplayFrame();
 		renderer->ClearBuffer(olc::BLACK, true);
 		renderer->UpdateViewport(vViewPos, vViewSize);
+	}
+
+	void* PixelGameEngine::GetWindowPane() const
+	{
+		return platform->GetWindowPane();
+	}
+
+	void PixelGameEngine::SetWindowVisible(bool bShow) const
+	{
+		platform->ShowWindow(bShow);
 	}
 
 #if !defined(PGE_USE_CUSTOM_START)
@@ -4602,6 +4627,7 @@ namespace olc
 		virtual olc::rcode ApplicationCleanUp() override { return olc::rcode::OK; }
 		virtual olc::rcode ThreadStartUp() override { return olc::rcode::OK; }
 		virtual void ShowWindow(bool bShow) override { ::ShowWindow(olc_hWnd, bShow); }
+		virtual void* GetWindowPane() override { return reinterpret_cast<void*>(olc_hWnd); }
 
 		virtual olc::rcode ThreadCleanUp() override
 		{
@@ -4813,6 +4839,9 @@ namespace olc
 			renderer->DestroyDevice();
 			return olc::OK;
 		}
+
+		virtual void ShowWindow(bool bShow) override { return; } // not yet implemented
+		virtual void* GetWindowPane() override { return nullptr; } // not yet implemented
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
@@ -5063,6 +5092,9 @@ namespace olc {
 			renderer->DestroyDevice();
 			return olc::OK;
 		}
+
+		virtual void ShowWindow(bool bShow) override { return; } // not yet implemented
+		virtual void* GetWindowPane() override { return nullptr; } // not yet implemented
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
@@ -5371,6 +5403,9 @@ namespace olc
 
 		virtual olc::rcode ThreadCleanUp() override
 		{ renderer->DestroyDevice(); return olc::OK; }
+
+		virtual void ShowWindow(bool bShow) override { return; } // not yet implemented
+		virtual void* GetWindowPane() override { return nullptr; } // not yet implemented
 
 		virtual olc::rcode CreateGraphics(bool bFullScreen, bool bEnableVSYNC, const olc::vi2d& vViewPos, const olc::vi2d& vViewSize) override
 		{
