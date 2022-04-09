@@ -15,6 +15,12 @@ namespace olc {
         UpdateTexture();
     }
 
+    TextElement::TextElement(olc::TextElement&& mv) {
+        *this = mv;
+        mv.texture = nullptr;
+        mv.sprite = nullptr;
+    }
+
     TextElement::~TextElement() {
         delete texture;
         delete sprite;

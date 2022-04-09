@@ -14,6 +14,8 @@ namespace olc {
         olc::Pixel color;
         olc::vi2d size;
 
+        TextElement& operator=(const TextElement& cp) = default; // private copy assignment constructor
+
         void UpdateTexture();
     public:
         enum Align {
@@ -22,6 +24,8 @@ namespace olc {
 
         TextElement(olc::FontAsset fnt, const std::string& string);
         TextElement(olc::FontAsset fnt);
+
+        TextElement(olc::TextElement&& mv);
         virtual ~TextElement();
 
         inline olc::vi2d GetSize() { return size; }
