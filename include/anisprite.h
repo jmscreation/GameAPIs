@@ -24,13 +24,24 @@ namespace olc {
 
         Frame frameLocation;
 
+        // set animation frame (relative to region)
         void setFrame(uint32_t frame);
+
+        // get animation frame (relative to region)
         inline uint32_t getFrame() const { return curRegionFrame; }
 
+        // set animation sequence from index or sequence name (optionally set the relative frame)
         void setFrameRegion(uint32_t freg, uint32_t relativeFrame=0);
         void setFrameRegion(const std::string& freg, uint32_t relativeFrame=0);
+
+        // get the current sequence name
         inline std::string getFrameRegion() const { return curRegion; }
+
+        // get the number of sequences in the animation
         inline uint32_t getFrameRegionCount() const { return frameLocation.region.size(); }
+
+        // get the number of frames in the current animation sequence
+        inline uint32_t getFrameCount() const { return frameLocation.region.at(curRegion).length; }
 
         Animation(const Frame& animationData);
         virtual ~Animation();
