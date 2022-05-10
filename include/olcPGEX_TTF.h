@@ -278,6 +278,9 @@ namespace olc {
                     } else {
                         std::cerr << errorString << "\n";
                     }
+
+                    if(continueOnGlyphError) continue;
+
                     return olc::FontRect{{0, 0}, {0, 0}};
                 }
 
@@ -389,6 +392,9 @@ namespace olc {
                     } else {
                         std::cerr << errorString << "\n";
                     }
+
+                    if(continueOnGlyphError) continue;
+
                     if(psprite == nullptr) delete sprite; // prevent memory leak
                     return nullptr;
                 }
@@ -416,6 +422,9 @@ namespace olc {
         olc::Decal *RenderStringToDecal(std::u32string string,
                                         olc::Pixel color) {
             Sprite *sprite = RenderStringToSprite(string, color);
+
+            if(sprite == nullptr) return nullptr; // do not create a decal if the sprite failed to generate
+
             olc::Decal *decal = new olc::Decal{sprite};
             return decal;
         }
@@ -475,6 +484,8 @@ namespace olc {
             }
             return true;
         }
+
+        static bool continueOnGlyphError;
 
     private:
         void DrawBitmap(int x, int y, FT_Bitmap bmp, olc::Pixel color) {
@@ -586,6 +597,7 @@ namespace olc {
 #undef OLC_PGEX_TTF
 
 FT_Library olc::Font::library;
+bool olc::Font::continueOnGlyphError = false;
 
 #endif
 
