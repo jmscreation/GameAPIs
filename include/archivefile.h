@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <algorithm>
 
 class ArchiveFile {
 protected:
