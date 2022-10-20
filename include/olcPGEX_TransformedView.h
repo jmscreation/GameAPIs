@@ -110,7 +110,7 @@ namespace olc
 		void SetZoom(const float fZoom, const olc::vf2d& vPos);
 		void StartPan(const olc::vi2d& vPos);
 		void UpdatePan(const olc::vi2d& vPos);
-		void EndPan(const olc::vi2d& vPos);
+		void EndPan(const olc::vi2d& vPos);m_vPortOffset
 		const olc::vf2d& GetWorldOffset() const;
 		const olc::vf2d& GetWorldScale() const;
 		virtual olc::vf2d WorldToScreen(const olc::vf2d& vWorldPos) const;
@@ -128,7 +128,7 @@ namespace olc
 		bool m_bPanning = false;
 		olc::vf2d m_vStartPan = { 0.0f, 0.0f };
 		olc::vi2d m_vViewArea;
-		olc::vi2d m_portPos = { 0, 0 };
+		olc::vi2d m_vPortOffset = { 0, 0 };
 
 	public: // Hopefully, these should look familiar!
 		// Plots a single point
@@ -266,17 +266,17 @@ namespace olc
 
 	void TransformedView::SetPortOffset(const olc::vi2d& vPortOffset)
 	{
-		m_portPos = vPortOffset;
+		m_vPortOffset = vPortOffset;
 	}
 
 	olc::vf2d TransformedView::GetWorldTL() const
 	{
-		return TransformedView::ScreenToWorld({ 0,0 });
+		return TransformedView::ScreenToWorld(olc::vf2d(m_vPortOffset));
 	}
 
 	olc::vf2d TransformedView::GetWorldBR() const
 	{
-		return TransformedView::ScreenToWorld(m_vViewArea);
+		return TransformedView::ScreenToWorld(olc::vf2d(m_vPortOffset + m_vViewArea));
 	}
 
 	olc::vf2d TransformedView::GetWorldVisibleArea() const
@@ -286,7 +286,7 @@ namespace olc
 
 	olc::vi2d TransformedView::GetPortOffset() const
 	{
-		return m_portPos;
+		return m_vPortOffset;
 	}
 
 	void TransformedView::ZoomAtScreenPos(const float fDeltaZoom, const olc::vi2d& vPos)
@@ -338,14 +338,14 @@ namespace olc
 
 	olc::vf2d TransformedView::WorldToScreen(const olc::vf2d& vWorldPos) const
 	{
-		olc::vf2d vFloat = ((vWorldPos - m_vWorldOffset) * m_vWorldScale) + olc::vf2d(m_portPos);
+		olc::vf2d vFloat = ((vWorldPos - m_vWorldOffset) * m_vWorldScale) + olc::vf2d(m_vPortOffset);
 		//vFloat = { std::floor(vFloat.x + 0.5f), std::floor(vFloat.y + 0.5f) };
 		return vFloat;
 	}
 
 	olc::vf2d TransformedView::ScreenToWorld(const olc::vf2d& vScreenPos) const
 	{
-		return (olc::vf2d(vScreenPos) / m_vWorldScale) + m_vWorldOffset;
+		return ((vScreenPos - olc::vf2d(m_vPortOffset)) / m_vWorldScale) + m_vWorldOffset;
 	}
 
 	olc::vf2d TransformedView::ScaleToWorld(const olc::vf2d& vScreenSize) const
