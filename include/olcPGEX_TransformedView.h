@@ -110,7 +110,7 @@ namespace olc
 		void SetZoom(const float fZoom, const olc::vf2d& vPos);
 		void StartPan(const olc::vi2d& vPos);
 		void UpdatePan(const olc::vi2d& vPos);
-		void EndPan(const olc::vi2d& vPos);m_vPortOffset
+		void EndPan(const olc::vi2d& vPos);
 		const olc::vf2d& GetWorldOffset() const;
 		const olc::vf2d& GetWorldScale() const;
 		virtual olc::vf2d WorldToScreen(const olc::vf2d& vWorldPos) const;
