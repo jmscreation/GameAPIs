@@ -3,7 +3,7 @@
 
 	+-------------------------------------------------------------+
 	|         OneLoneCoder Pixel Game Engine Extension            |
-	|                 Transformed View v1.05                      |
+	|                 Transformed View v1.07                      |
 	+-------------------------------------------------------------+
 
 	NOTE: UNDER ACTIVE DEVELOPMENT - THERE ARE BUGS/GLITCHES
@@ -70,6 +70,8 @@
 			Removed unused "range" facility in TileTransformView
 	1.04:	Added DrawPolygonDecal() for arbitrary polygons
 	1.05:	Clipped DrawSprite() to visible area, massive performance increase
+	1.06:	Fixed error in DrawLine() - Thanks CraisyDaisyRecords (& Fern)!
+	1.07:	Added Port Offset (partially implemented / does not account for raw draw targets ONLY DECALS)
 */
 
 #pragma once
@@ -93,9 +95,11 @@ namespace olc
 		void MoveWorldOffset(const olc::vf2d& vDeltaOffset);
 		void SetWorldScale(const olc::vf2d& vScale);
 		void SetViewArea(const olc::vi2d& vViewArea);
+		void SetPortOffset(const olc::vi2d& vPortOffset);
 		olc::vf2d GetWorldTL() const;
 		olc::vf2d GetWorldBR() const;
 		olc::vf2d GetWorldVisibleArea() const;
+		olc::vi2d GetPortOffset() const;
 		void ZoomAtScreenPos(const float fDeltaZoom, const olc::vi2d& vPos);
 		void SetZoom(const float fZoom, const olc::vf2d& vPos);
 		void StartPan(const olc::vi2d& vPos);
@@ -118,6 +122,7 @@ namespace olc
 		bool m_bPanning = false;
 		olc::vf2d m_vStartPan = { 0.0f, 0.0f };
 		olc::vi2d m_vViewArea;
+		olc::vi2d m_portPos = { 0, 0 };
 
 	public: // Hopefully, these should look familiar!
 		// Plots a single point
@@ -247,6 +252,11 @@ namespace olc
 		m_vViewArea = vViewArea;
 	}
 
+	void TransformedView::SetPortOffset(const olc::vi2d& vPortOffset)
+	{
+		m_portPos = vPortOffset;
+	}
+
 	olc::vf2d TransformedView::GetWorldTL() const
 	{
 		return TransformedView::ScreenToWorld({ 0,0 });
@@ -260,6 +270,11 @@ namespace olc
 	olc::vf2d TransformedView::GetWorldVisibleArea() const
 	{
 		return GetWorldBR() - GetWorldTL();
+	}
+
+	olc::vi2d TransformedView::GetPortOffset() const
+	{
+		return m_portPos;
 	}
 
 	void TransformedView::ZoomAtScreenPos(const float fDeltaZoom, const olc::vi2d& vPos)
@@ -538,24 +553,24 @@ namespace olc
 
 	void TransformedView::DrawDecal(const olc::vf2d & pos, olc::Decal * decal, const olc::vf2d & scale, const olc::Pixel & tint)
 	{
-		pge->DrawDecal(WorldToScreen(pos), decal, scale * m_vWorldScale * m_vRecipPixel, tint);
+		pge->DrawDecal(WorldToScreen(pos) + m_portPos, decal, scale * m_vWorldScale * m_vRecipPixel, tint);
 	}
 
 	void TransformedView::DrawPartialDecal(const olc::vf2d & pos, olc::Decal * decal, const olc::vf2d & source_pos, const olc::vf2d & source_size, const olc::vf2d & scale, const olc::Pixel & tint)
 	{
-		pge->DrawPartialDecal(WorldToScreen(pos), decal, source_pos, source_size, scale * m_vWorldScale * m_vRecipPixel, tint);
+		pge->DrawPartialDecal(WorldToScreen(pos) + m_portPos, decal, source_pos, source_size, scale * m_vWorldScale * m_vRecipPixel, tint);
 	}
 
 	void TransformedView::DrawPartialDecal(const olc::vf2d & pos, const olc::vf2d & size, olc::Decal * decal, const olc::vf2d & source_pos, const olc::vf2d & source_size, const olc::Pixel & tint)
 	{
-		pge->DrawPartialDecal(WorldToScreen(pos), size * m_vWorldScale * m_vRecipPixel, decal, source_pos, source_size, tint);
+		pge->DrawPartialDecal(WorldToScreen(pos) + m_portPos, size * m_vWorldScale * m_vRecipPixel, decal, source_pos, source_size, tint);
 	}
 	
 	void TransformedView::DrawExplicitDecal(olc::Decal* decal, const olc::vf2d* pos, const olc::vf2d* uv, const olc::Pixel* col, uint32_t elements)
 	{
 		std::vector<olc::vf2d> vTransformed(elements);
 		for (uint32_t n = 0; n < elements; n++)
-			vTransformed[n] = WorldToScreen(pos[n]);		
+			vTransformed[n] = WorldToScreen(pos[n]) + m_portPos;		
 		pge->DrawExplicitDecal(decal, vTransformed.data(), uv, col, elements);
 	}
 
@@ -563,8 +578,8 @@ namespace olc
 	{
 		std::array<olc::vf2d, 4> vTransformed = 
 		{ {
-			WorldToScreen(pos[0]), WorldToScreen(pos[1]),
-			WorldToScreen(pos[2]), WorldToScreen(pos[3]),
+			WorldToScreen(pos[0] + m_portPos), WorldToScreen(pos[1] + m_portPos),
+			WorldToScreen(pos[2] + m_portPos), WorldToScreen(pos[3] + m_portPos),
 		} };
 
 		pge->DrawWarpedDecal(decal, vTransformed, tint);
@@ -589,8 +604,8 @@ namespace olc
 	{
 		std::array<olc::vf2d, 4> vTransformed =
 		{ {
-			WorldToScreen(pos[0]), WorldToScreen(pos[1]),
-			WorldToScreen(pos[2]), WorldToScreen(pos[3]),
+			WorldToScreen(pos[0] + m_portPos), WorldToScreen(pos[1] + m_portPos),
+			WorldToScreen(pos[2] + m_portPos), WorldToScreen(pos[3] + m_portPos),
 		} };
 
 		pge->DrawPartialWarpedDecal(decal, vTransformed, source_pos, source_size, tint);
@@ -603,44 +618,44 @@ namespace olc
 
 	void TransformedView::DrawRotatedDecal(const olc::vf2d & pos, olc::Decal * decal, const float fAngle, const olc::vf2d & center, const olc::vf2d & scale, const olc::Pixel & tint)
 	{
-		pge->DrawRotatedDecal(WorldToScreen(pos), decal, fAngle, center, scale * m_vWorldScale * m_vRecipPixel, tint);
+		pge->DrawRotatedDecal(WorldToScreen(pos) + m_portPos, decal, fAngle, center, scale * m_vWorldScale * m_vRecipPixel, tint);
 	}
 
 	void TransformedView::DrawPartialRotatedDecal(const olc::vf2d & pos, olc::Decal * decal, const float fAngle, const olc::vf2d & center, const olc::vf2d & source_pos, const olc::vf2d & source_size, const olc::vf2d & scale, const olc::Pixel & tint)
 	{
-		pge->DrawPartialRotatedDecal(WorldToScreen(pos), decal, fAngle, center, source_pos, source_size, scale * m_vWorldScale * m_vRecipPixel, tint);
+		pge->DrawPartialRotatedDecal(WorldToScreen(pos) + m_portPos, decal, fAngle, center, source_pos, source_size, scale * m_vWorldScale * m_vRecipPixel, tint);
 	}
 	
 	void TransformedView::DrawStringDecal(const olc::vf2d & pos, const std::string & sText, const olc::Pixel col, const olc::vf2d & scale)
 	{
-		pge->DrawStringDecal(WorldToScreen(pos), sText, col, scale * m_vWorldScale * m_vRecipPixel);
+		pge->DrawStringDecal(WorldToScreen(pos) + m_portPos, sText, col, scale * m_vWorldScale * m_vRecipPixel);
 	}
 
 	void TransformedView::DrawStringPropDecal(const olc::vf2d & pos, const std::string & sText, const olc::Pixel col, const olc::vf2d & scale )
 	{
-		pge->DrawStringPropDecal(WorldToScreen(pos), sText, col, scale * m_vWorldScale * m_vRecipPixel);
+		pge->DrawStringPropDecal(WorldToScreen(pos) + m_portPos, sText, col, scale * m_vWorldScale * m_vRecipPixel);
 	}
 
 	void TransformedView::FillRectDecal(const olc::vf2d & pos, const olc::vf2d & size, const olc::Pixel col)
 	{
-		pge->FillRectDecal(WorldToScreen(pos), (size * m_vWorldScale).ceil(), col);
+		pge->FillRectDecal(WorldToScreen(pos) + m_portPos, (size * m_vWorldScale).ceil(), col);
 	}
 
 	void TransformedView::DrawLineDecal(const olc::vf2d& pos1, const olc::vf2d& pos2, Pixel p)
 	{
-		pge->DrawLineDecal(WorldToScreen(pos1), WorldToScreen(pos2), p);
+		pge->DrawLineDecal(WorldToScreen(pos1) + m_portPos, WorldToScreen(pos2) + m_portPos, p);
 	}
 	
 	void TransformedView::GradientFillRectDecal(const olc::vf2d & pos, const olc::vf2d & size, const olc::Pixel colTL, const olc::Pixel colBL, const olc::Pixel colBR, const olc::Pixel colTR)
 	{
-		pge->GradientFillRectDecal(WorldToScreen(pos), size * m_vWorldScale, colTL, colBL, colBR, colTR);
+		pge->GradientFillRectDecal(WorldToScreen(pos) + m_portPos, size * m_vWorldScale, colTL, colBL, colBR, colTR);
 	}
 
 	void TransformedView::DrawPolygonDecal(olc::Decal* decal, const std::vector<olc::vf2d>& pos, const std::vector<olc::vf2d>& uv, const olc::Pixel tint)
 	{
 		std::vector<olc::vf2d> vTransformed(pos.size());
 		for (uint32_t n = 0; n < pos.size(); n++)
-			vTransformed[n] = WorldToScreen(pos[n]);
+			vTransformed[n] = WorldToScreen(pos[n]) + m_portPos;
 		pge->DrawPolygonDecal(decal, vTransformed, uv, tint);
 	}
 
@@ -648,7 +663,7 @@ namespace olc
 	{
 		std::vector<olc::vf2d> vTransformed(pos.size());
 		for (uint32_t n = 0; n < pos.size(); n++)
-			vTransformed[n] = WorldToScreen(pos[n]);
+			vTransformed[n] = WorldToScreen(pos[n]) + m_portPos;
 		pge->DrawPolygonDecal(decal, vTransformed, uv, tint);
 	}
 
@@ -657,17 +672,17 @@ namespace olc
 
 	void TransformedView::DrawDecal(olc::Shade &shade, const olc::vf2d& pos, olc::Decal* decal, const olc::vf2d& scale, const olc::Pixel& tint)
 	{
-		shade.DrawDecal(WorldToScreen(pos), decal, scale * m_vWorldScale * m_vRecipPixel, tint);
+		shade.DrawDecal(WorldToScreen(pos) + m_portPos, decal, scale * m_vWorldScale * m_vRecipPixel, tint);
 	}
 
 	void TransformedView::DrawPartialDecal(olc::Shade& shade, const olc::vf2d& pos, olc::Decal* decal, const olc::vf2d& source_pos, const olc::vf2d& source_size, const olc::vf2d& scale, const olc::Pixel& tint)
 	{
-		shade.DrawPartialDecal(WorldToScreen(pos), decal, source_pos, source_size, scale * m_vWorldScale * m_vRecipPixel, tint);
+		shade.DrawPartialDecal(WorldToScreen(pos) + m_portPos, decal, source_pos, source_size, scale * m_vWorldScale * m_vRecipPixel, tint);
 	}
 
 	void TransformedView::DrawPartialDecal(olc::Shade& shade, const olc::vf2d& pos, const olc::vf2d& size, olc::Decal* decal, const olc::vf2d& source_pos, const olc::vf2d& source_size, const olc::Pixel& tint)
 	{
-		shade.DrawPartialDecal(WorldToScreen(pos), size * m_vWorldScale * m_vRecipPixel, decal, source_pos, source_size, tint);
+		shade.DrawPartialDecal(WorldToScreen(pos) + m_portPos, size * m_vWorldScale * m_vRecipPixel, decal, source_pos, source_size, tint);
 	}
 
 #endif
